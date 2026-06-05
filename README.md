@@ -56,6 +56,7 @@ Chrome's built-in PDF viewer and embedded site viewers such as JSTOR are protect
 - `TERMS.md` explains candidate-evidence limits, user responsibilities, and copyright/paywall expectations.
 - `DATA_USAGE.md` contains Chrome Web Store privacy-form notes and permission justifications.
 - `SUBMISSION_CHECKLIST.md` contains upload and listing text suggestions.
+- `MAINTENANCE_CHECKLIST.md` is the required review checklist for future code, privacy, policy, and release changes.
 
 ## Best Next Step
 

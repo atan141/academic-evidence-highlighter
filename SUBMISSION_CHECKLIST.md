@@ -21,6 +21,7 @@ Use this checklist before publishing Academic Evidence Highlighter.
 - Add a privacy policy URL in the Chrome Web Store Developer Dashboard.
 - Make sure the privacy policy matches the extension behavior.
 - Use the same data disclosures in the dashboard and in `DATA_USAGE.md`.
+- Review `MAINTENANCE_CHECKLIST.md` before every release or code update.
 - Do not claim the extension gives final answers. Use "candidate evidence" language.
 - Do not claim affiliation with Google Scholar, Google, JSTOR, publishers, universities, or databases.
 - Do not claim the extension bypasses paywalls or gives access to locked papers.
