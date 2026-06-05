@@ -19,7 +19,9 @@ Use this checklist before publishing Academic Evidence Highlighter.
 ## Privacy and Policy
 
 - Add a privacy policy URL in the Chrome Web Store Developer Dashboard.
+- Current submitted privacy policy URL: `https://docs.google.com/document/d/1-CyYBNFgZTvN7RcAJ7G5qynrXcyXUMSCYMdSgZMPfEs/edit?usp=sharing`
 - Make sure the privacy policy matches the extension behavior.
+- Make sure the public Google Doc privacy policy matches `PRIVACY.md` before submitting a new version.
 - Use the same data disclosures in the dashboard and in `DATA_USAGE.md`.
 - Review `MAINTENANCE_CHECKLIST.md` before every release or code update.
 - Do not claim the extension gives final answers. Use "candidate evidence" language.
@@ -51,3 +53,7 @@ Productivity or Search Tools.
 ## Support Contact
 
 Use an email address that you are comfortable showing in the Chrome Web Store listing.
+
+## Support URL
+
+A Google Form is acceptable for the initial support URL. Keep it short, avoid file uploads, and ask users not to paste private, sensitive, copyrighted, or confidential content.

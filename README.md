@@ -58,6 +58,10 @@ Chrome's built-in PDF viewer and embedded site viewers such as JSTOR are protect
 - `SUBMISSION_CHECKLIST.md` contains upload and listing text suggestions.
 - `MAINTENANCE_CHECKLIST.md` is the required review checklist for future code, privacy, policy, and release changes.
 
+Current submitted public privacy policy URL:
+
+`https://docs.google.com/document/d/1-CyYBNFgZTvN7RcAJ7G5qynrXcyXUMSCYMdSgZMPfEs/edit?usp=sharing`
+
 ## Best Next Step
 
 The most useful product path is:

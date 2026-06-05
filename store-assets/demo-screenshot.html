@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Academic Evidence Highlighter Store Screenshot</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #eef2f6;
+      color: #111827;
+      font-family: Arial, Helvetica, sans-serif;
+      height: 800px;
+      overflow: hidden;
+      width: 1280px;
+    }
+
+    .frame {
+      display: grid;
+      grid-template-columns: 880px 400px;
+      height: 800px;
+      width: 1280px;
+    }
+
+    .article {
+      background: #ffffff;
+      border-right: 1px solid #dbe3ea;
+      min-width: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .articleTop {
+      align-items: center;
+      background: #174886;
+      color: #ffffff;
+      display: flex;
+      font-size: 17px;
+      font-weight: 700;
+      gap: 18px;
+      height: 56px;
+      padding: 0 64px;
+    }
+
+    .articleTop span {
+      opacity: 0.95;
+    }
+
+    .paper {
+      padding: 42px 70px;
+    }
+
+    .paper h1 {
+      font-size: 30px;
+      letter-spacing: 0;
+      line-height: 1.15;
+      margin: 0 0 18px;
+    }
+
+    .meta {
+      color: #667085;
+      font-size: 15px;
+      margin-bottom: 36px;
+    }
+
+    .paper p {
+      font-size: 22px;
+      line-height: 1.45;
+      margin: 0 0 24px;
+    }
+
+    .link {
+      color: #0b63bd;
+      font-weight: 700;
+    }
+
+    .highlight {
+      background: #bdeccf;
+      border-radius: 5px;
+      box-shadow: 0 0 0 2px rgba(22, 101, 52, 0.16);
+      padding: 2px 3px;
+    }
+
+    .answer {
+      background: #fff08a;
+      border-bottom: 2px solid #8d5d00;
+      border-radius: 4px;
+      font-weight: 800;
+      padding: 0 2px;
+    }
+
+    .side {
+      background: #f8fafc;
+      min-width: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .extensionBar {
+      align-items: center;
+      background: #ffffff;
+      border-bottom: 1px solid #dbe3ea;
+      display: flex;
+      gap: 11px;
+      height: 54px;
+      padding: 0 20px;
+    }
+
+    .icon {
+      align-items: center;
+      background: linear-gradient(135deg, #155e75, #2563eb 55%, #7c3aed);
+      border-radius: 7px;
+      color: #ffffff;
+      display: flex;
+      font-size: 18px;
+      font-weight: 900;
+      height: 26px;
+      justify-content: center;
+      width: 26px;
+    }
+
+    .extensionTitle {
+      font-size: 18px;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .panel {
+      background: #ffffff;
+      border: 1px solid #dbe3ea;
+      border-radius: 18px 18px 0 0;
+      margin: 12px;
+      min-height: 734px;
+      overflow: hidden;
+    }
+
+    .panelHeader {
+      border-bottom: 1px solid #dbe3ea;
+      padding: 20px 22px 18px;
+    }
+
+    .panelHeader h2 {
+      font-size: 27px;
+      letter-spacing: 0;
+      line-height: 1.1;
+      margin: 0 0 8px;
+    }
+
+    .panelHeader p {
+      color: #667085;
+      font-size: 15px;
+      margin: 0;
+    }
+
+    .form {
+      border-bottom: 1px solid #dbe3ea;
+      padding: 18px 22px;
+    }
+
+    label {
+      color: #384454;
+      display: block;
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .field {
+      align-items: center;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      color: #1f2937;
+      display: flex;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 14px;
+      min-height: 44px;
+      padding: 10px 12px;
+    }
+
+    .question {
+      align-items: flex-start;
+      height: 78px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .button {
+      align-items: center;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      display: flex;
+      font-size: 15px;
+      font-weight: 800;
+      height: 40px;
+      justify-content: center;
+      padding: 0 15px;
+      white-space: nowrap;
+    }
+
+    .primary {
+      background: #176fb8;
+      border-color: #176fb8;
+      color: #ffffff;
+    }
+
+    .status {
+      background: #f1f5f9;
+      border-bottom: 1px solid #dbe3ea;
+      color: #536170;
+      font-size: 15px;
+      line-height: 1.35;
+      padding: 16px 22px;
+    }
+
+    .countRow {
+      align-items: center;
+      border-bottom: 1px solid #dbe3ea;
+      display: flex;
+      justify-content: space-between;
+      padding: 16px 22px;
+    }
+
+    .count {
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .count span {
+      color: #667085;
+      font-size: 15px;
+      font-weight: 700;
+      margin-left: 6px;
+    }
+
+    .result {
+      border: 2px solid #4a90e2;
+      border-radius: 10px;
+      margin: 16px 14px;
+      padding: 13px;
+    }
+
+    .pills {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+
+    .pill {
+      background: #e8edf4;
+      border-radius: 999px;
+      color: #4b5563;
+      font-size: 13px;
+      font-weight: 900;
+      padding: 5px 9px;
+    }
+
+    .pill.high {
+      background: #d9f3e1;
+      color: #176337;
+    }
+
+    .summary {
+      color: #111827;
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.35;
+      margin-bottom: 7px;
+    }
+
+    .sentence {
+      color: #334155;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <section class="article" aria-label="Demo article">
+      <div class="articleTop">
+        <span>Research Reader</span>
+        <span>Sections</span>
+        <span>Export</span>
+      </div>
+      <article class="paper">
+        <h1>Climate Patterns and Seed Production in Dry Forest Stands</h1>
+        <div class="meta">Demo article text created for product screenshots</div>
+        <p>
+          The study compared long-term climate records with field measurements from multiple forest plots.
+          Researchers tracked seasonal temperature, spring moisture, and cone production across repeated survey years.
+        </p>
+        <p>
+          Several plots showed stable annual rainfall but warmer growing seasons. The strongest pattern appeared
+          where late-season heat overlapped with reduced soil moisture <span class="link">(Table 2)</span>.
+        </p>
+        <p>
+          <span class="highlight">Sites with larger increases in growing season temperature showed lower
+          <span class="answer">seed cone production</span>, suggesting that heat-related water stress may reduce reproductive output.</span>
+          The relationship was strongest in dry plots and weaker in cooler, higher-elevation sites.
+        </p>
+        <p>
+          These results support further review of climate-sensitive reproduction in forest species, especially where
+          local resource availability changes across decades.
+        </p>
+      </article>
+    </section>
+
+    <aside class="side" aria-label="Academic Evidence Highlighter side panel">
+      <div class="extensionBar">
+        <div class="icon">A</div>
+        <div class="extensionTitle">Academic Evidence Highlighter</div>
+      </div>
+      <div class="panel">
+        <div class="panelHeader">
+          <h2>Evidence Finder</h2>
+          <p>Candidate evidence for quick academic review.</p>
+        </div>
+        <div class="form">
+          <label>Research question</label>
+          <div class="field question">How is climate related to seed cone production?</div>
+          <label>Concept 1</label>
+          <div class="field">climate</div>
+          <label>Concept 2</label>
+          <div class="field">seed cone production</div>
+          <label>Extra terms</label>
+          <div class="field">temperature, rainfall, drought, warming</div>
+          <div class="actions">
+            <div class="button primary">Scan page</div>
+            <div class="button">Scan saved PDF</div>
+            <div class="button">Clear all</div>
+          </div>
+        </div>
+        <div class="status">Review the highlighted sentences. Treat every item as candidate evidence until you verify it.</div>
+        <div class="countRow">
+          <div class="count">18 <span>candidate sentences</span></div>
+          <div class="button">Export CSV</div>
+        </div>
+        <div class="result">
+          <div class="pills">
+            <div class="pill high">high</div>
+            <div class="pill">relationship</div>
+            <div class="pill">#1</div>
+          </div>
+          <div class="summary">Climate may be related to seed cone production.</div>
+          <div class="sentence">Sites with larger increases in growing season temperature showed lower seed cone production...</div>
+        </div>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>

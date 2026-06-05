@@ -13,6 +13,7 @@ Use this checklist every time the extension code, permissions, data behavior, UI
   - User-entered research settings
   - Any external network request, backend, AI API, analytics, or third-party service
   - Any public claim in the UI, README, Chrome Web Store listing, privacy policy, terms, or data disclosure
+  - Any public policy document hosted outside the repo, including the Google Doc privacy policy URL used in the Chrome Web Store listing
 
 ## After Editing Code
 
@@ -46,6 +47,8 @@ Check that the documents still accurately answer:
 - Does the extension still avoid claiming final answers instead of candidate evidence?
 - Does the extension still avoid claiming paywall bypass, publisher affiliation, or Google Scholar affiliation?
 - Does the Chrome Web Store description match the real behavior?
+- Does the public Google Doc privacy policy match `PRIVACY.md` and the current extension behavior?
+- Does the Chrome Web Store Privacy page use the current public privacy policy URL?
 
 ## Required Doc Updates
 
@@ -64,6 +67,8 @@ Update privacy/terms/data docs immediately if any change adds or modifies:
 - New PDF/page extraction behavior
 - Sharing, syncing, or transmitting user data
 
+Also update the public privacy policy document before release when any of the above changes affect privacy or data handling.
+
 ## Final Response Habit
 
 When reporting a completed code change to the user, include:
@@ -74,3 +79,4 @@ When reporting a completed code change to the user, include:
 - Whether any policy documents needed updates
 - Whether the upload ZIP was rebuilt
 - Whether GitHub was updated, only if the user explicitly asked for GitHub
+- Whether the public Google Doc privacy policy needs updating

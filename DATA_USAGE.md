@@ -2,6 +2,10 @@
 
 This document is written to help complete the Chrome Web Store privacy and data usage forms for Academic Evidence Highlighter.
 
+Current submitted public privacy policy URL:
+
+`https://docs.google.com/document/d/1-CyYBNFgZTvN7RcAJ7G5qynrXcyXUMSCYMdSgZMPfEs/edit?usp=sharing`
+
 ## Single Purpose
 
 Academic Evidence Highlighter helps users find and review candidate evidence in scholarly search results, article pages, and PDFs.
