@@ -47,7 +47,6 @@ async function init() {
   sortMode.addEventListener("change", saveUiPreferencesAndRender);
   confidenceFilter.addEventListener("change", saveUiPreferencesAndRender);
   await prefillFromPage();
-  await annotateCurrentScholarResults();
   await rememberActiveUrl();
   startSearchWatcher();
   startTabWatcher();
@@ -136,7 +135,6 @@ async function getActiveTab() {
 async function scanCurrentTab(options = {}) {
   const { auto = false } = options;
   await prefillFromPage({ forceScan: false, silent: true });
-  await annotateCurrentScholarResults();
   await saveSettings();
   setStatus(auto ? "Auto-scanning this page..." : "Scanning visible article text...");
   scanButton.disabled = true;
@@ -430,7 +428,6 @@ async function prefillFromPage(options = {}) {
         currentResults = [];
         renderResults();
       }
-      await annotateCurrentScholarResults();
       if (!silent) setStatus("Updated from the current Scholar search. You can edit the fields, or scan now.");
       if (forceScan && suggestion.conceptOne && suggestion.conceptTwo) {
         await scanCurrentTab();
@@ -442,16 +439,6 @@ async function prefillFromPage(options = {}) {
     }
   } catch {
     if (!silent) setStatus("Open Scholar, an abstract page, or an article HTML page, then scan.");
-  }
-}
-
-async function annotateCurrentScholarResults() {
-  try {
-    const tab = await getActiveTab();
-    if (!tab?.id) return;
-    await sendPageMessage(tab.id, "EEH_ANNOTATE_RESULTS");
-  } catch {
-    // Annotation is a Scholar-only enhancement; ignore pages that cannot be annotated.
   }
 }
 

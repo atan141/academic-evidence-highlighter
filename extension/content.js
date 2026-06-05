@@ -73,15 +73,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  if (message?.type === "EEH_ANNOTATE_RESULTS") {
-    const summary = annotateScholarResults(message.settings || {});
-    sendResponse({ ok: true, summary });
-    return true;
-  }
-
   if (message?.type === "EEH_CLEAR") {
     clearHighlights();
-    clearScholarPreviewBadges();
     sendResponse({ ok: true });
     return true;
   }
@@ -154,95 +147,6 @@ function isReferenceBlock(block, text) {
   const citationLike = /\(\d{4}\)|\bdoi\b|https?:\/\/|[A-Z][A-Za-z-]+,\s+[A-Z]\./g;
   const matches = text.match(citationLike) || [];
   return matches.length >= 3 && text.length < 1200;
-}
-
-function annotateScholarResults(settings) {
-  const results = getScholarResultElements();
-  clearScholarPreviewBadges();
-  if (!results.length) return { annotated: 0 };
-
-  const intent = inferIntent(settings);
-  const conceptTerms = normalizeTerms([settings.conceptOne, settings.conceptTwo]);
-  const questionTerms = termsFromText(settings.question || "");
-  const extraTerms = normalizeTerms((settings.extraTerms || "").split(/[,;\n]/));
-  const allTerms = [...new Set([...conceptTerms, ...questionTerms, ...extraTerms])];
-  let annotated = 0;
-
-  results.forEach((result) => {
-    const title = normalizeSpaces(result.querySelector(".gs_rt")?.innerText || "");
-    const snippet = normalizeSpaces(result.querySelector(".gs_rs")?.innerText || "");
-    const meta = normalizeSpaces(result.querySelector(".gs_a")?.innerText || "");
-    const text = [title, snippet, meta].filter(Boolean).join(". ");
-    if (!text) return;
-
-    const context = getTargetContext(settings, text);
-    const chunks = splitSentences(text);
-    if (!chunks.length && text.length >= 35) chunks.push(text);
-    const candidates = chunks
-      .map((sentence) => {
-        const scored = scoreSentence(sentence, conceptTerms, allTerms, intent, context);
-        if (scored.score < intent.threshold) return null;
-        return {
-          sentence,
-          score: scored.score,
-          confidence: confidenceFromScore(scored.score, intent, scored.directness),
-          answerTerms: extractAnswerTerms(sentence, intent)
-        };
-      })
-      .filter(Boolean);
-
-    const counts = countCompatibilities(candidates);
-    const hasPdf = Boolean(result.querySelector("a[href*='.pdf'], .gs_or_ggsm a"));
-    const hasHtml = Boolean(result.querySelector(".gs_rt a"));
-    const best = bestCompatibility(counts);
-    addScholarPreviewBadge(result, { counts, best, hasPdf, hasHtml });
-    annotated += 1;
-  });
-
-  return { annotated };
-}
-
-function getScholarResultElements() {
-  return [...document.querySelectorAll(".gs_r.gs_or.gs_scl, .gs_r")].filter((el) => el.querySelector(".gs_rt"));
-}
-
-function clearScholarPreviewBadges() {
-  document.querySelectorAll(".eeh-scholar-badge").forEach((badge) => badge.remove());
-  document.querySelectorAll(".eeh-scholar-result-high, .eeh-scholar-result-medium, .eeh-scholar-result-low").forEach((el) => {
-    el.classList.remove("eeh-scholar-result-high", "eeh-scholar-result-medium", "eeh-scholar-result-low");
-  });
-}
-
-function countCompatibilities(candidates) {
-  return candidates.reduce((counts, candidate) => {
-    counts[candidate.confidence] += 1;
-    return counts;
-  }, { high: 0, medium: 0, low: 0 });
-}
-
-function bestCompatibility(counts) {
-  if (counts.high) return "high";
-  if (counts.medium) return "medium";
-  if (counts.low) return "low";
-  return "none";
-}
-
-function addScholarPreviewBadge(result, data) {
-  const anchor = result.querySelector(".gs_rt") || result;
-  const badge = document.createElement("span");
-  badge.className = `eeh-scholar-badge ${data.best}`;
-
-  const label = data.best === "none"
-    ? "No evidence in snippet"
-    : `${data.counts.high} high · ${data.counts.medium} med in snippet`;
-  const access = data.hasPdf ? "PDF" : data.hasHtml ? "HTML" : "link";
-  badge.textContent = `${label} · ${access}`;
-  badge.title = "Preview based only on the visible Google Scholar title/snippet, not the full paper.";
-  anchor.append(badge);
-
-  if (data.best !== "none") {
-    result.classList.add(`eeh-scholar-result-${data.best}`);
-  }
 }
 
 function getReadableBlocks() {

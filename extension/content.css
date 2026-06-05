@@ -38,53 +38,6 @@
   animation: eeh-pulse-ring 0.9s ease-in-out 2;
 }
 
-.eeh-scholar-badge {
-  border: 1px solid #c9d3dd;
-  border-radius: 999px;
-  color: #33414d;
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 750;
-  line-height: 1.2;
-  margin-left: 8px;
-  padding: 4px 8px;
-  vertical-align: middle;
-}
-
-.eeh-scholar-badge.high {
-  background: #d9f3e1;
-  border-color: #71bd86;
-  color: #176337;
-}
-
-.eeh-scholar-badge.medium {
-  background: #fff1c9;
-  border-color: #d7aa39;
-  color: #725000;
-}
-
-.eeh-scholar-badge.low,
-.eeh-scholar-badge.none {
-  background: #eef3f8;
-  border-color: #c9d3dd;
-  color: #445566;
-}
-
-.eeh-scholar-result-high {
-  border-left: 5px solid #41a563;
-  padding-left: 8px;
-}
-
-.eeh-scholar-result-medium {
-  border-left: 5px solid #c69222;
-  padding-left: 8px;
-}
-
-.eeh-scholar-result-low {
-  border-left: 5px solid #8da0b3;
-  padding-left: 8px;
-}
-
 @keyframes eeh-pulse-ring {
   0% {
     box-shadow: 0 0 0 0 rgba(19, 104, 178, 0.55);

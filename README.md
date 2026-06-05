@@ -22,14 +22,13 @@ This version scans scholarly search results, visible article text, and accessibl
 - Updates the research question/concepts when the active Google Scholar search query changes.
 - Parses one-word and multi-word organism searches like `seagull food diet`, `black phoebe food diet`, and `what does seagull eat`.
 - Adds guide mode for broad searches like `hamster care guide`, prioritizing practical care recommendations about housing, feeding, bedding, handling, hygiene, health, and veterinary care.
-- Adds preview badges to visible Google Scholar results, based on high/medium candidate evidence found in each visible title/snippet.
 - Guards the page script against duplicate injection when Chrome already loaded it.
 - Keeps PDF parser fallback quiet so expected fallback behavior does not appear as an extension error.
 - Detects reference/bibliography sections and labels those matches as `reference` instead of high/medium/low evidence.
 - Remembers the research question, two concepts, and extra terms.
 - Uses the research question to change the filter. For example, "what does pink flamingo eat?" prioritizes eating/food evidence and downranks diet-color sentences that do not answer the question.
 - For food questions, checks that the sentence or nearby text is actually about the target organism, so food evidence for another species is penalized.
-- Scans Google Scholar result snippets, article/full-text HTML pages, and tries the first accessible PDF link when page text has no matches.
+- Scans article/full-text HTML pages, visible page text, and tries the first accessible PDF link when page text has no matches.
 - If an online PDF blocks extension access, use **Scan saved PDF** to scan a locally saved PDF file in the sidebar. Saved PDFs are parsed with bundled PDF.js first, with a rough parser as fallback.
 - PDF results include page numbers. For accessible online PDF tabs, clicking a PDF result tries to jump Chrome's PDF viewer to that page; for saved local PDFs, the card shows the page number to inspect manually.
 - Highlights candidate evidence sentences on the page when it can wrap the exact sentence.
