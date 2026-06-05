@@ -50,6 +50,13 @@ This version scans scholarly search results, visible article text, and accessibl
 
 Chrome's built-in PDF viewer and embedded site viewers such as JSTOR are protected or iframe-heavy, so normal content scripts cannot reliably draw highlights inside every PDF the same way they can highlight article HTML pages. This prototype now tries to fetch direct/accessible PDF links and extract text for evidence cards. If a publisher returns `403`, the browser can display the PDF but the extension is blocked from fetching it directly; use **Scan saved PDF** as the fallback. Scanned image PDFs and encrypted PDFs may still fail because there is no selectable text to extract.
 
+## Policy Documents
+
+- `PRIVACY.md` explains what information the extension uses and how it is handled.
+- `TERMS.md` explains candidate-evidence limits, user responsibilities, and copyright/paywall expectations.
+- `DATA_USAGE.md` contains Chrome Web Store privacy-form notes and permission justifications.
+- `SUBMISSION_CHECKLIST.md` contains upload and listing text suggestions.
+
 ## Best Next Step
 
 The most useful product path is:

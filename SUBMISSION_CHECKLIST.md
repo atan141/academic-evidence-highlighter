@@ -1,0 +1,52 @@
+# Chrome Web Store Submission Checklist
+
+Use this checklist before publishing Academic Evidence Highlighter.
+
+## Before Uploading
+
+- Confirm the uploaded ZIP contains `extension/manifest.json`.
+- Confirm the version in `extension/manifest.json` is the version being uploaded.
+- Reload the unpacked extension in `chrome://extensions`.
+- Test the side panel on:
+  - A Google Scholar search page
+  - An article HTML page
+  - An accessible PDF URL
+  - A saved PDF with **Scan saved PDF**
+- Confirm no old search-result preview badges appear on Scholar results.
+- Confirm **Clear all** clears fields, results, and page highlights.
+- Confirm CSV export works.
+
+## Privacy and Policy
+
+- Add a privacy policy URL in the Chrome Web Store Developer Dashboard.
+- Make sure the privacy policy matches the extension behavior.
+- Use the same data disclosures in the dashboard and in `DATA_USAGE.md`.
+- Do not claim the extension gives final answers. Use "candidate evidence" language.
+- Do not claim affiliation with Google Scholar, Google, JSTOR, publishers, universities, or databases.
+- Do not claim the extension bypasses paywalls or gives access to locked papers.
+
+## Suggested Short Description
+
+Review candidate evidence in scholarly search results, article pages, and PDFs.
+
+## Suggested Detailed Description
+
+Academic Evidence Highlighter helps researchers, students, and readers quickly find candidate evidence in academic materials.
+
+Enter a research question or target concepts, then scan the current page or PDF. The extension highlights likely evidence sentences, shows short review cards in the side panel, labels references separately, and can export candidate results to CSV.
+
+Every result is candidate evidence for human verification. The extension is intended to speed up review, not replace careful reading or citation checking.
+
+This version runs locally in the browser. It does not send paper text, PDF text, or research questions to a developer server.
+
+## Suggested Permission Explanation
+
+Academic Evidence Highlighter needs access to page content so it can scan the current research page, article page, or PDF for candidate evidence. It uses storage only to remember the user's search settings and sidebar preferences. It does not sell data, serve ads, or transmit paper text to a developer server.
+
+## Suggested Category
+
+Productivity or Search Tools.
+
+## Support Contact
+
+Use an email address that you are comfortable showing in the Chrome Web Store listing.
