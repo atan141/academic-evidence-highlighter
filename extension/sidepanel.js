@@ -19,6 +19,7 @@ const upgradeNote = document.querySelector("#upgradeNote");
 const dismissUpgradeNote = document.querySelector("#dismissUpgradeNote");
 const statusEl = document.querySelector("#status");
 const countEl = document.querySelector("#count");
+const countCaptionEl = document.querySelector("#countCaption");
 const resultsEl = document.querySelector("#results");
 const emptyStateEl = document.querySelector("#emptyState");
 const FIELD_KEYS = Object.keys(fields);
@@ -439,8 +440,27 @@ async function clearAll() {
 function renderResults() {
   const visibleResults = getVisibleResults();
   countEl.textContent = String(visibleResults.length);
+  countCaptionEl.textContent = currentResults.length > visibleResults.length
+    ? `shown of ${currentResults.length} candidate sentences`
+    : "candidate sentences";
   exportButton.disabled = currentResults.length === 0;
   resultsEl.replaceChildren();
+
+  if (currentResults.length > 0 && visibleResults.length === 0) {
+    setEmptyState(
+      "Matches were found, but the current filter is hiding them",
+      `The scan found ${currentResults.length} candidate sentence${currentResults.length === 1 ? "" : "s"}. Your Show filter is set to “${confidenceFilter.selectedOptions[0]?.textContent || "a limited view"},” which hides all of them. Show all including references to view every match.`,
+      [{
+        label: "Show all matches",
+        action: () => {
+          confidenceFilter.value = "allWithReferences";
+          saveUiPreferencesAndRender();
+        }
+      }]
+    );
+  } else if (visibleResults.length > 0) {
+    clearEmptyState();
+  }
 
   visibleResults.forEach((result, index) => {
     const card = document.createElement("article");
