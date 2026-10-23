@@ -11,7 +11,7 @@ Version 0.17.8 scans scholarly search results, visible article text, modern web-
 3. Click **Load unpacked**.
 4. Choose this folder:
 
-   `versions/0.17.8/extension`
+   `extension`
 
 5. Open Google Scholar, another scholarly search page, an article abstract page, or an HTML full-text article.
 6. Click the extension icon. On scholarly pages, it can fill the question/concepts from the search and scan automatically. Use **Pause scanning** to stop automatic scans while keeping your question. While paused, **Scan this page once** scans only the current page.
