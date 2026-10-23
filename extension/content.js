@@ -138,7 +138,8 @@ function scanPage(settings) {
   const deduped = dedupeCandidates(candidates).slice(0, 80);
   deduped.forEach((candidate) => {
     const block = blocks.find((item) => normalizeSpaces(item.innerText || "").includes(candidate.sentence));
-    if (block) highlightSentence(block, candidate);
+    candidate.canHighlight = Boolean(block && !block.isTextFallback);
+    if (candidate.canHighlight) highlightSentence(block, candidate);
   });
 
   return { results: deduped, pageTextLength, pageBodyTextLength, pageBlockCount: blocks.length };
@@ -184,7 +185,11 @@ function getReadableBlocks() {
       return !childText || childText.length < ownText.length * 0.75;
     });
 
-  if (articleBlocks.length) return articleBlocks;
+  const articleTextLength = articleBlocks.reduce(
+    (total, block) => total + normalizeSpaces(block.innerText || "").length,
+    0
+  );
+  if (articleBlocks.length && articleTextLength >= 500) return articleBlocks;
 
   // Modern social and single-page apps often put visible copy in generic
   // containers rather than paragraphs. Use their explicit text containers
@@ -204,7 +209,7 @@ function getReadableBlocks() {
       return text.length >= 35 && text.length <= 1200;
     });
   const fallbackSet = new Set(fallbackCandidates);
-  return fallbackCandidates.filter((el) => {
+  const appBlocks = fallbackCandidates.filter((el) => {
     const childText = [...el.querySelectorAll(fallbackSelector)]
       .filter((child) => fallbackSet.has(child))
       .map((child) => normalizeSpaces(child.innerText || ""))
@@ -212,6 +217,34 @@ function getReadableBlocks() {
     const ownText = normalizeSpaces(el.innerText || "");
     return !childText || childText.length < ownText.length * 0.75;
   });
+  if (appBlocks.length) return [...articleBlocks, ...appBlocks];
+
+  // Last resort for accessible pages built without semantic text blocks.
+  // The side panel still controls when these blocks are scanned. These text
+  // blocks support result cards, but cannot always be highlighted in place.
+  const bodyLines = (document.body?.innerText || "")
+    .split(/\n+/)
+    .map((line) => normalizeSpaces(line))
+    .filter((line) => line.length >= 3);
+  const textBlocks = [];
+  let current = "";
+  bodyLines.forEach((line) => {
+    const next = current ? `${current} ${line}` : line;
+    if (next.length > 800 && current.length >= 20) {
+      textBlocks.push(current);
+      current = line;
+    } else {
+      current = next;
+    }
+  });
+  if (current.length >= 20) textBlocks.push(current);
+  if (textBlocks.length) {
+    return [
+      ...articleBlocks,
+      ...textBlocks.map((innerText) => ({ innerText, isTextFallback: true }))
+    ];
+  }
+  return articleBlocks;
 }
 
 function scoreSentence(sentence, conceptTerms, allTerms, intent = inferIntent({}), context = {}) {

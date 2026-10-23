@@ -1,0 +1,343 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1e252b;
+  background: #f7f8fa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+.panel {
+  min-height: 100vh;
+}
+
+.topbar {
+  align-items: center;
+  background: #ffffff;
+  border-bottom: 1px solid #dde3ea;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.scanControl {
+  align-items: flex-end;
+  display: grid;
+  gap: 5px;
+  justify-items: end;
+  min-width: 126px;
+}
+
+.scanState {
+  color: #176337;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.scanState.paused {
+  color: #725000;
+}
+
+.pauseButton {
+  border-color: #1368b2;
+  color: #1368b2;
+  white-space: nowrap;
+}
+
+.upgradeNote {
+  align-items: center;
+  background: #eef5fb;
+  border-bottom: 1px solid #c9dced;
+  color: #30495e;
+  display: flex;
+  font-size: 12px;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 9px 12px;
+}
+
+.upgradeNote[hidden] {
+  display: none;
+}
+
+.upgradeNote button {
+  flex: none;
+  font-size: 11px;
+  min-height: 28px;
+  padding: 4px 8px;
+}
+
+h1 {
+  font-size: 19px;
+  line-height: 1.2;
+  margin: 0 0 4px;
+}
+
+p {
+  color: #5c6873;
+  font-size: 13px;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.controls {
+  display: grid;
+  gap: 11px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #dde3ea;
+}
+
+label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 650;
+  color: #3f4b56;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid #c6d0da;
+  border-radius: 6px;
+  color: #1e252b;
+  font: inherit;
+  font-size: 13px;
+  padding: 9px 10px;
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #1368b2;
+  box-shadow: 0 0 0 3px rgba(19, 104, 178, 0.15);
+  outline: none;
+}
+
+.buttonRow,
+.summary {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.buttonRow {
+  flex-wrap: wrap;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.resultControls {
+  background: #ffffff;
+  border-bottom: 1px solid #dde3ea;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+  padding: 10px 16px;
+}
+
+button {
+  border: 1px solid #bcc8d4;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1e252b;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  min-height: 34px;
+  padding: 7px 11px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+button.primary {
+  background: #1368b2;
+  border-color: #1368b2;
+  color: #ffffff;
+}
+
+.status {
+  color: #51606d;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 12px 16px;
+}
+
+.summary {
+  background: #ffffff;
+  border-bottom: 1px solid #dde3ea;
+  border-top: 1px solid #dde3ea;
+  padding: 10px 16px;
+}
+
+.summary strong {
+  font-size: 20px;
+}
+
+.summary span {
+  color: #5c6873;
+  flex: 1;
+  font-size: 12px;
+}
+
+.emptyState {
+  background: #fff8e7;
+  border: 1px solid #e6c979;
+  border-left: 5px solid #b77b00;
+  border-radius: 8px;
+  color: #423716;
+  display: grid;
+  gap: 7px;
+  line-height: 1.45;
+  margin: 12px;
+  padding: 13px;
+}
+
+.emptyState[hidden] {
+  display: none;
+}
+
+.emptyState strong {
+  font-size: 14px;
+}
+
+.emptyState p {
+  color: inherit;
+  font-size: 12px;
+}
+
+.emptyStateActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 3px;
+}
+
+.emptyStateActions button {
+  font-size: 12px;
+}
+
+.results {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.result {
+  background: #ffffff;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  padding: 11px;
+}
+
+.result:hover,
+.result:focus {
+  border-color: #1368b2;
+  box-shadow: 0 0 0 3px rgba(19, 104, 178, 0.13);
+  outline: none;
+}
+
+.meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pill {
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #3c4650;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 7px;
+}
+
+.pill.high {
+  background: #d9f3e1;
+  color: #176337;
+}
+
+.pill.medium {
+  background: #fff1c9;
+  color: #725000;
+}
+
+.pill.low {
+  background: #e8eef7;
+  color: #39506e;
+}
+
+.pill.reference {
+  background: #eee8f7;
+  color: #594173;
+}
+
+.sentence {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.answerChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.answerChip {
+  background: #102f48;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 750;
+  padding: 4px 8px;
+}
+
+.answerText {
+  background: #fff08a;
+  border-bottom: 2px solid #8d5d00;
+  border-radius: 3px;
+  font-weight: 800;
+  padding: 0 2px;
+}
+
+.fields {
+  border-top: 1px solid #edf1f5;
+  color: #52606d;
+  display: grid;
+  font-size: 12px;
+  gap: 5px;
+  padding-top: 8px;
+}
+
+.cardButton {
+  justify-self: start;
+}
+
+.pageNote {
+  border-top: 1px solid #edf1f5;
+  color: #52606d;
+  font-size: 11px;
+  line-height: 1.4;
+  padding-top: 8px;
+}

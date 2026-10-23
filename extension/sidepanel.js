@@ -469,16 +469,18 @@ function renderResults() {
   visibleResults.forEach((result, index) => {
     const card = document.createElement("article");
     card.className = "result";
-    card.tabIndex = 0;
-    card.setAttribute("role", "button");
-    card.setAttribute("aria-label", `Show candidate ${index + 1} in the paper`);
-    card.addEventListener("click", () => focusResult(result));
-    card.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        focusResult(result);
-      }
-    });
+    if (result.canHighlight !== false) {
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-label", `Show candidate ${index + 1} in the paper`);
+      card.addEventListener("click", () => focusResult(result));
+      card.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          focusResult(result);
+        }
+      });
+    }
 
     const meta = document.createElement("div");
     meta.className = "meta";
@@ -513,16 +515,23 @@ function renderResults() {
     }
     fieldsBlock.append(...detailLines);
 
-    const focusButton = document.createElement("button");
-    focusButton.className = "cardButton";
-    focusButton.textContent = "Show highlight";
-    focusButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      focusResult(result);
-    });
+    const action = document.createElement("div");
+    if (result.canHighlight === false) {
+      action.className = "pageNote";
+      action.textContent = "Text scanned from the page. In-page highlighting isn’t available for this layout.";
+    } else {
+      const focusButton = document.createElement("button");
+      focusButton.className = "cardButton";
+      focusButton.textContent = "Show highlight";
+      focusButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        focusResult(result);
+      });
+      action.append(focusButton);
+    }
 
-    if (answerChips.childElementCount) card.append(meta, answerChips, sentence, fieldsBlock, focusButton);
-    else card.append(meta, sentence, fieldsBlock, focusButton);
+    if (answerChips.childElementCount) card.append(meta, answerChips, sentence, fieldsBlock, action);
+    else card.append(meta, sentence, fieldsBlock, action);
     resultsEl.append(card);
   });
 }
