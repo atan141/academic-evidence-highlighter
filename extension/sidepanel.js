@@ -228,8 +228,12 @@ async function scanCurrentTab(options = {}) {
     } else if (currentResults.length) {
       setStatus("Review the highlighted sentences. Treat every item as candidate evidence until you verify it.");
     } else if ((response.pageTextLength || 0) < 50) {
-      const message = "The extension got no readable page text. This can happen when Chrome restricts access or the site uses a protected viewer, a frame, or a script-built page. This doesn’t necessarily mean the extension is broken. Try the article’s full-text page, or download its PDF and use Scan saved PDF.";
-      setEmptyState("This webpage couldn’t be read for scanning", message, [
+      const bodyTextLength = response.pageBodyTextLength || 0;
+      const hasVisiblePageText = bodyTextLength >= 50;
+      const message = hasVisiblePageText
+        ? "The browser page contains visible text, but the scanner could not separate it into readable text blocks. This site’s layout is not fully supported yet; this is an extension compatibility limitation, not proof that Chrome blocked access. Try selecting and copying the text into a document or opening a simpler text view."
+        : "The extension could not read text from this page. Chrome or the site may restrict access, or the page may use a protected viewer or frame. If this is an article, try its full-text page or download the PDF and use Scan saved PDF.";
+      setEmptyState(hasVisiblePageText ? "This page layout is not supported yet" : "The extension could not read this page", message, hasVisiblePageText ? [] : [
         { label: "Scan saved PDF", action: () => pdfFileInput.click() }
       ]);
       setStatus(message);

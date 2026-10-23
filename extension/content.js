@@ -66,6 +66,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       ok: true,
       results: scan.results,
       pageTextLength: scan.pageTextLength,
+      pageBodyTextLength: scan.pageBodyTextLength,
       pageBlockCount: scan.pageBlockCount,
       title: document.title,
       url: location.href,
@@ -103,6 +104,7 @@ function scanPage(settings) {
   const blocks = getReadableBlocks();
   const candidates = [];
   const pageTextLength = blocks.reduce((total, block) => total + normalizeSpaces(block.innerText || "").length, 0);
+  const pageBodyTextLength = normalizeSpaces(document.body?.innerText || "").length;
 
   blocks.forEach((block, blockIndex) => {
     const text = normalizeSpaces(block.innerText || "");
@@ -139,7 +141,7 @@ function scanPage(settings) {
     if (block) highlightSentence(block, candidate);
   });
 
-  return { results: deduped, pageTextLength, pageBlockCount: blocks.length };
+  return { results: deduped, pageTextLength, pageBodyTextLength, pageBlockCount: blocks.length };
 }
 
 function isReferenceBlock(block, text) {
@@ -167,7 +169,7 @@ function getReadableBlocks() {
     ".content p"
   ].join(",");
 
-  return [...document.querySelectorAll(selector)]
+  const articleBlocks = [...document.querySelectorAll(selector)]
     .filter((el) => isVisible(el))
     .filter((el) => {
       const text = normalizeSpaces(el.innerText || "");
@@ -181,6 +183,35 @@ function getReadableBlocks() {
       const ownText = normalizeSpaces(el.innerText || "");
       return !childText || childText.length < ownText.length * 0.75;
     });
+
+  if (articleBlocks.length) return articleBlocks;
+
+  // Modern social and single-page apps often put visible copy in generic
+  // containers rather than paragraphs. Use their explicit text containers
+  // (not the entire page body) as a conservative fallback.
+  const fallbackSelector = [
+    "[dir='auto']",
+    "[role='main']",
+    "[role='article']",
+    "main",
+    "article",
+    "section"
+  ].join(",");
+  const fallbackCandidates = [...document.querySelectorAll(fallbackSelector)]
+    .filter((el) => isVisible(el))
+    .filter((el) => {
+      const text = normalizeSpaces(el.innerText || "");
+      return text.length >= 35 && text.length <= 1200;
+    });
+  const fallbackSet = new Set(fallbackCandidates);
+  return fallbackCandidates.filter((el) => {
+    const childText = [...el.querySelectorAll(fallbackSelector)]
+      .filter((child) => fallbackSet.has(child))
+      .map((child) => normalizeSpaces(child.innerText || ""))
+      .join(" ");
+    const ownText = normalizeSpaces(el.innerText || "");
+    return !childText || childText.length < ownText.length * 0.75;
+  });
 }
 
 function scoreSentence(sentence, conceptTerms, allTerms, intent = inferIntent({}), context = {}) {
