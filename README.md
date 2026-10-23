@@ -4,6 +4,10 @@ A Chrome extension prototype for finding candidate evidence while reading resear
 
 Version 0.17.10 scans scholarly search results, visible article text, modern web-app text, and accessible PDFs; splits long article paragraphs into candidate sentences; highlights likely evidence sentences when the page layout supports it; creates review cards; and exports a CSV. Automatic scanning defaults to scholarly pages only. Pause clears current results and page highlights while keeping research settings; trying to scan while paused asks before resuming, and resuming automatically scans the active eligible page. Scholarly-only mode checks the page address against known scholarly publishers and academic URL patterns before loading the page-reading script. Unrecognized pages are not read for scanning; the panel explains this and offers a one-time scan button. YouTube search results in Any page mode can show matching video titles as title matches clearly marked not evidence. Each open tab can keep its own research question and concepts for the browser session, so returning to a tab restores that tab's search. In dynamic feeds, the extension rescans as the user scrolls and accumulates results in page memory; switching tabs does not clear them. Reloading, closing the tab, or navigating away ends that page's in-memory result session. No result database or cloud storage is used.
 
+## Version Snapshots
+
+The archived extension packages and source snapshots are in [`versions/`](versions/README.md): [0.16.3](versions/0.16.3/) is the previous finalized Web Store version, and [0.17.10](versions/0.17.10/) is currently under Web Store review. These are folders on the `main` branch, not separate branches. Branches are temporary lines of development; folders keep multiple version snapshots together in one branch.
+
 ## Load It In Chrome
 
 1. Open `chrome://extensions`.
