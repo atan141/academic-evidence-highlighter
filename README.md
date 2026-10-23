@@ -2,7 +2,7 @@
 
 A Chrome extension prototype for finding candidate evidence while reading research pages.
 
-This version scans scholarly search results, visible article text, and accessible PDFs; highlights likely evidence sentences; creates review cards; and exports a CSV. It is intentionally conservative: every item is labeled as candidate evidence for human verification.
+Version 0.17.0 scans scholarly search results, visible article text, and accessible PDFs; highlights likely evidence sentences; creates review cards; and exports a CSV. Automatic scanning defaults to scholarly pages only, and you can pause it at any time without clearing your research question. It is intentionally conservative: every item is labeled as candidate evidence for human verification.
 
 ## Load It In Chrome
 
@@ -11,10 +11,10 @@ This version scans scholarly search results, visible article text, and accessibl
 3. Click **Load unpacked**.
 4. Choose this folder:
 
-   `/Users/annie./Documents/Codex/2026-06-04/my-claim-okay-i-have-a`
+   `versions/0.17.0`
 
 5. Open Google Scholar, another scholarly search page, an article abstract page, or an HTML full-text article.
-6. Click the extension icon. On Scholar pages, it will try to fill the question/concepts from the search and scan automatically.
+6. Click the extension icon. On scholarly pages, it can fill the question/concepts from the search and scan automatically. Use **Pause scanning** to stop automatic scans while keeping your question. While paused, **Scan this page once** scans only the current page.
 
 ## What Works Now
 
@@ -36,6 +36,9 @@ This version scans scholarly search results, visible article text, and accessibl
 - Lets the sidebar sort results by paper order or highest compatibility, and filter by confidence. The default filter is **All except references**, with separate options for **References only** and **All including references**.
 - Clicking a result card jumps to the matching highlight on the page when the result came from page text.
 - Auto-clears stale results and scans the newly active page when you switch to a different research paper tab.
+- Starts in **Scholarly pages only** automatic scanning mode. Change it to **Any page** or **Only when I click Scan** in the side panel.
+- Provides a visible **Pause scanning** control, a paused toolbar badge, and the `Alt+Shift+P` keyboard shortcut. Pausing removes current page highlights but keeps the saved research question and concepts.
+- Loads the page-reading script only when automatic scanning is allowed or you explicitly scan, rather than injecting it into every website on browser startup.
 - Remembers sidebar sort/filter preferences, such as Highest compatibility, across tabs and reloads.
 - **Clear all** clears the search fields, results, and page highlights.
 - Creates sidebar cards with:

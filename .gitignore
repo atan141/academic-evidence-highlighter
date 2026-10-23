@@ -2,5 +2,7 @@
 .Rhistory
 *.log
 *.zip
+!versions/0.16.3/academic-evidence-highlighter-0.16.3.zip
+!versions/0.17.0/academic-evidence-highlighter-0.17.0.zip
 node_modules/
 .env

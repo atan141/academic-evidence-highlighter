@@ -36,7 +36,7 @@ Review candidate evidence in scholarly search results, article pages, and PDFs.
 
 Academic Evidence Highlighter helps researchers, students, and readers quickly find candidate evidence in academic materials.
 
-Enter a research question or target concepts, then scan the current page or PDF. The extension highlights likely evidence sentences, shows short review cards in the side panel, labels references separately, and can export candidate results to CSV.
+Enter a research question or target concepts, then scan the current page or PDF. Automatic scanning defaults to scholarly pages only, and users can pause it or choose manual-only scanning. The extension highlights likely evidence sentences, shows short review cards in the side panel, labels references separately, and can export candidate results to CSV.
 
 Every result is candidate evidence for human verification. The extension is intended to speed up review, not replace careful reading or citation checking.
 
@@ -44,7 +44,7 @@ This version runs locally in the browser. It does not send paper text, PDF text,
 
 ## Suggested Permission Explanation
 
-Academic Evidence Highlighter needs access to page content so it can scan the current research page, article page, or PDF for candidate evidence. It uses storage only to remember the user's search settings and sidebar preferences. It does not sell data, serve ads, or transmit paper text to a developer server.
+Academic Evidence Highlighter needs access to page content to scan pages selected by the user's automatic scanning mode or when the user explicitly clicks Scan page. It uses storage to remember the user's search settings, scan mode, pause state, and sidebar preferences. It does not sell data, serve ads, or transmit paper text to a developer server.
 
 ## Suggested Category
 

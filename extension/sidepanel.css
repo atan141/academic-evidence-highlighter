@@ -19,9 +19,60 @@ body {
 }
 
 .topbar {
+  align-items: center;
   background: #ffffff;
   border-bottom: 1px solid #dde3ea;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
   padding: 16px;
+}
+
+.scanControl {
+  align-items: flex-end;
+  display: grid;
+  gap: 5px;
+  justify-items: end;
+  min-width: 126px;
+}
+
+.scanState {
+  color: #176337;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.scanState.paused {
+  color: #725000;
+}
+
+.pauseButton {
+  border-color: #1368b2;
+  color: #1368b2;
+  white-space: nowrap;
+}
+
+.upgradeNote {
+  align-items: center;
+  background: #eef5fb;
+  border-bottom: 1px solid #c9dced;
+  color: #30495e;
+  display: flex;
+  font-size: 12px;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 9px 12px;
+}
+
+.upgradeNote[hidden] {
+  display: none;
+}
+
+.upgradeNote button {
+  flex: none;
+  font-size: 11px;
+  min-height: 28px;
+  padding: 4px 8px;
 }
 
 h1 {

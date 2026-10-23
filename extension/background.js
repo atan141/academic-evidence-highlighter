@@ -1,6 +1,34 @@
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+  if (details.reason === "update" && details.previousVersion === "0.16.3") {
+    const saved = await chrome.storage.sync.get("scanMode");
+    const update = { showV17Note: true };
+    if (!saved.scanMode) update.scanMode = "scholarly";
+    await chrome.storage.sync.set(update);
+  }
+  updatePauseBadge();
 });
+
+chrome.runtime.onStartup.addListener(updatePauseBadge);
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "sync" && changes.eehPaused) updatePauseBadge();
+});
+
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== "toggle-pause") return;
+  const { eehPaused = false } = await chrome.storage.sync.get("eehPaused");
+  await chrome.storage.sync.set({ eehPaused: !eehPaused });
+});
+
+async function updatePauseBadge() {
+  const { eehPaused = false } = await chrome.storage.sync.get("eehPaused");
+  await chrome.action.setBadgeText({ text: eehPaused ? "Ⅱ" : "" });
+  if (eehPaused) {
+    await chrome.action.setBadgeBackgroundColor({ color: "#6b7280" });
+    await chrome.action.setBadgeTextColor({ color: "#ffffff" });
+  }
+}
 
 chrome.action.onClicked.addListener(async (tab) => {
   if (!tab.id) return;

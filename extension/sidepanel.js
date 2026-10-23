@@ -12,6 +12,11 @@ const clearButton = document.querySelector("#clearButton");
 const exportButton = document.querySelector("#exportButton");
 const sortMode = document.querySelector("#sortMode");
 const confidenceFilter = document.querySelector("#confidenceFilter");
+const pauseButton = document.querySelector("#pauseButton");
+const scanStateEl = document.querySelector("#scanState");
+const scanMode = document.querySelector("#scanMode");
+const upgradeNote = document.querySelector("#upgradeNote");
+const dismissUpgradeNote = document.querySelector("#dismissUpgradeNote");
 const statusEl = document.querySelector("#status");
 const countEl = document.querySelector("#count");
 const resultsEl = document.querySelector("#results");
@@ -25,11 +30,13 @@ let lastAutoQuestion = "";
 let refreshTimer = null;
 let lastActiveUrl = "";
 let autoScanInFlight = false;
+let eehPaused = false;
+let storedScanMode = "scholarly";
 
 init();
 
 async function init() {
-  const saved = await chrome.storage.sync.get([...FIELD_KEYS, ...UI_PREF_KEYS]);
+  const saved = await chrome.storage.sync.get([...FIELD_KEYS, ...UI_PREF_KEYS, "eehPaused", "scanMode", "showV17Note"]);
   Object.entries(fields).forEach(([key, input]) => {
     input.value = saved[key] || "";
     input.addEventListener("input", saveSettings);
@@ -38,15 +45,30 @@ async function init() {
   confidenceFilter.value = saved.confidenceFilter && saved.confidenceFilter !== "all"
     ? saved.confidenceFilter
     : "noReferences";
+  eehPaused = Boolean(saved.eehPaused);
+  storedScanMode = ["scholarly", "all", "manual"].includes(saved.scanMode) ? saved.scanMode : "scholarly";
+  scanMode.value = storedScanMode;
+  if (saved.showV17Note) upgradeNote.hidden = false;
 
   scanButton.addEventListener("click", scanCurrentTab);
+  pauseButton.addEventListener("click", togglePause);
+  scanMode.addEventListener("change", saveScanMode);
+  dismissUpgradeNote.addEventListener("click", async () => {
+    upgradeNote.hidden = true;
+    await chrome.storage.sync.set({ showV17Note: false });
+  });
   scanFileButton.addEventListener("click", () => pdfFileInput.click());
   pdfFileInput.addEventListener("change", scanSelectedPdf);
   clearButton.addEventListener("click", clearAll);
   exportButton.addEventListener("click", exportCsv);
   sortMode.addEventListener("change", saveUiPreferencesAndRender);
   confidenceFilter.addEventListener("change", saveUiPreferencesAndRender);
-  await prefillFromPage();
+  chrome.storage.onChanged.addListener(handleStorageChange);
+  updatePauseUi();
+  const initialTab = await getActiveTab();
+  if (!eehPaused && storedScanMode !== "manual" && initialTab?.url && isAutomaticPage(initialTab.url, storedScanMode)) {
+    await prefillFromPage();
+  }
   await rememberActiveUrl();
   startSearchWatcher();
   startTabWatcher();
@@ -71,7 +93,12 @@ function getSettings() {
 function startSearchWatcher() {
   if (refreshTimer) window.clearInterval(refreshTimer);
   refreshTimer = window.setInterval(() => {
-    prefillFromPage({ forceScan: false, silent: true, clearResultsOnChange: true });
+    if (eehPaused || !isAutomaticScanningAllowed(storedScanMode)) return;
+    getActiveTab().then((tab) => {
+      if (tab?.url && looksScholarly(tab.url)) {
+        prefillFromPage({ forceScan: false, silent: true, clearResultsOnChange: true });
+      }
+    }).catch(() => {});
   }, 2000);
 }
 
@@ -95,6 +122,10 @@ async function rememberActiveUrl() {
 }
 
 async function handleActivePageChanged(tab) {
+  if (eehPaused || !isAutomaticScanningAllowed(storedScanMode) || !isAutomaticPage(tab.url || "", storedScanMode)) {
+    setStatus(eehPaused ? "Scanning is paused. Your research question is saved." : "Automatic scanning is off for this page. Click Scan page to scan it once.");
+    return;
+  }
   currentResults = [];
   renderResults();
   if (isUnsupportedUrl(tab.url || "")) {
@@ -112,7 +143,7 @@ async function handleActivePageChanged(tab) {
 }
 
 async function autoScanCurrentTab() {
-  if (autoScanInFlight) return;
+  if (eehPaused || !isAutomaticScanningAllowed(storedScanMode) || autoScanInFlight) return;
   const settings = getSettings();
   if (!settings.question && !settings.conceptOne && !settings.conceptTwo && !settings.extraTerms) {
     setStatus("New page detected. Enter a research question or search Scholar to start scanning.");
@@ -134,6 +165,7 @@ async function getActiveTab() {
 
 async function scanCurrentTab(options = {}) {
   const { auto = false } = options;
+  if (auto && (eehPaused || !isAutomaticScanningAllowed(storedScanMode))) return;
   await prefillFromPage({ forceScan: false, silent: true });
   await saveSettings();
   setStatus(auto ? "Auto-scanning this page..." : "Scanning visible article text...");
@@ -157,6 +189,11 @@ async function scanCurrentTab(options = {}) {
       }
     }
 
+    if (auto && eehPaused) {
+      await clearPageHighlightsOnly();
+      return;
+    }
+
     currentResults = response.results || [];
     pageInfo = { title: response.title, url: response.url, isPdfLike: response.isPdfLike };
     renderResults();
@@ -178,6 +215,98 @@ async function scanCurrentTab(options = {}) {
     }
   } finally {
     scanButton.disabled = false;
+    if (eehPaused && !auto) setStatus("Scanned this page once. Automatic scanning is still paused.");
+  }
+}
+
+async function togglePause() {
+  eehPaused = !eehPaused;
+  await chrome.storage.sync.set({ eehPaused });
+  updatePauseUi();
+  if (eehPaused) {
+    await clearPageHighlightsOnly();
+    currentResults = [];
+    renderResults();
+    setStatus("Scanning paused. Your research question and concepts are saved.");
+  } else {
+    lastActiveUrl = "";
+    setStatus("Scanning resumed.");
+    const tab = await getActiveTab();
+    if (tab?.url) {
+      lastActiveUrl = tab.url;
+      await handleActivePageChanged(tab);
+    }
+  }
+}
+
+async function saveScanMode() {
+  storedScanMode = scanMode.value;
+  await chrome.storage.sync.set({ scanMode: storedScanMode });
+  lastActiveUrl = "";
+  if (storedScanMode === "manual") {
+    setStatus("Automatic scanning is off. Click Scan page whenever you want to scan.");
+    return;
+  }
+  const tab = await getActiveTab();
+  if (tab?.url) {
+    lastActiveUrl = tab.url;
+    await handleActivePageChanged(tab);
+  }
+}
+
+function updatePauseUi() {
+  pauseButton.textContent = eehPaused ? "Resume scanning" : "Pause scanning";
+  scanStateEl.textContent = eehPaused ? "Paused" : "Scanning on";
+  scanStateEl.classList.toggle("paused", eehPaused);
+  pauseButton.setAttribute("aria-pressed", String(eehPaused));
+  scanButton.textContent = eehPaused ? "Scan this page once" : "Scan page";
+}
+
+function handleStorageChange(changes, areaName) {
+  if (areaName !== "sync") return;
+  if (changes.eehPaused) {
+    eehPaused = Boolean(changes.eehPaused.newValue);
+    updatePauseUi();
+    if (eehPaused) {
+      clearPageHighlightsOnly();
+      currentResults = [];
+      renderResults();
+      setStatus("Scanning paused. Your research question and concepts are saved.");
+    }
+  }
+  if (changes.scanMode && ["scholarly", "all", "manual"].includes(changes.scanMode.newValue)) {
+    storedScanMode = changes.scanMode.newValue;
+    scanMode.value = storedScanMode;
+  }
+}
+
+function isAutomaticScanningAllowed(mode) {
+  return mode !== "manual";
+}
+
+function isAutomaticPage(url, mode) {
+  return mode === "all" || looksScholarly(url);
+}
+
+function looksScholarly(url) {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    return /(^|\.)scholar\.google\./.test(host)
+      || /(^|\.)pubmed\.ncbi\.nlm\.nih\.gov$/.test(host)
+      || /(^|\.)arxiv\.org$/.test(host)
+      || /(^|\.)semanticscholar\.org$/.test(host)
+      || /(^|\.)jstor\.org$/.test(host)
+      || /(^|\.)doi\.org$/.test(host)
+      || /(^|\.)springer\.com$/.test(host)
+      || /(^|\.)nature\.com$/.test(host)
+      || /(^|\.)sciencedirect\.com$/.test(host)
+      || /(^|\.)wiley\.com$/.test(host)
+      || /(^|\.)oup\.com$/.test(host)
+      || /(^|\.)edu$/.test(host)
+      || /\.pdf(?:$|[?#])/i.test(parsed.pathname + parsed.search + parsed.hash);
+  } catch {
+    return false;
   }
 }
 
@@ -1057,7 +1186,13 @@ function conceptLabel(settings, matches) {
 }
 
 function splitSentences(text) {
-  return text.replace(/\s+/g, " ").split(/(?<=[.!?])\s+(?=[A-Z0-9(])/).map((sentence) => sentence.trim()).filter((sentence) => sentence.length >= 35 && sentence.length <= 800);
+  const marker = "\u0000";
+  const abbreviations = /\b(?:e\.g|i\.e|et al|fig|eq|dr|prof|vs|no|inc|approx|dept|vol|pp)\./gi;
+  const protectedText = text.replace(/\s+/g, " ").replace(abbreviations, (match) => match.replaceAll(".", marker));
+  return protectedText
+    .split(/(?<=[.!?])\s+(?=[A-Z0-9(])/)
+    .map((sentence) => sentence.replaceAll(marker, ".").trim())
+    .filter((sentence) => sentence.length >= 20 && sentence.length <= 800);
 }
 
 function termsFromText(text) {
@@ -1082,10 +1217,15 @@ function normalizeTerms(terms) {
 function includesTerm(lowerText, term) {
   if (!term) return false;
   const normalized = term.toLowerCase().trim();
-  if (lowerText.includes(normalized)) return true;
-  if (normalized.endsWith("s") && lowerText.includes(normalized.slice(0, -1))) return true;
+  if (matchesTermBoundary(lowerText, normalized)) return true;
+  if (normalized.endsWith("s") && matchesTermBoundary(lowerText, normalized.slice(0, -1))) return true;
   const words = normalized.split(/\s+/).filter((word) => word.length > 2);
-  return words.length > 1 && words.some((word) => lowerText.includes(word.endsWith("s") ? word.slice(0, -1) : word));
+  return words.length > 1 && words.some((word) => matchesTermBoundary(lowerText, word.endsWith("s") ? word.slice(0, -1) : word));
+}
+
+function matchesTermBoundary(text, term) {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^\\p{L}\\p{N}_])${escaped}(?=$|[^\\p{L}\\p{N}_])`, "u").test(text);
 }
 
 function compressSentence(sentence) {

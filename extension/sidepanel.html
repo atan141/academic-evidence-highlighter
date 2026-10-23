@@ -13,9 +13,26 @@
           <h1>Evidence Finder</h1>
           <p>Candidate evidence for quick academic review.</p>
         </div>
+        <div class="scanControl">
+          <div id="scanState" class="scanState" role="status">Scanning on</div>
+          <button id="pauseButton" class="pauseButton" type="button">Pause scanning</button>
+        </div>
       </header>
 
+      <div id="upgradeNote" class="upgradeNote" hidden>
+        <span>Scanning now starts on scholarly pages only. You can change this below.</span>
+        <button id="dismissUpgradeNote" type="button" aria-label="Dismiss update note">Dismiss</button>
+      </div>
+
       <section class="controls">
+        <label>
+          Automatic scanning
+          <select id="scanMode">
+            <option value="scholarly">Scholarly pages only</option>
+            <option value="all">Any page</option>
+            <option value="manual">Only when I click Scan</option>
+          </select>
+        </label>
         <label>
           Research question
           <textarea id="question" rows="3" placeholder="How is forest cover related to tick abundance?"></textarea>

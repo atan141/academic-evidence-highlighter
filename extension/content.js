@@ -244,11 +244,13 @@ function scoreSentence(sentence, conceptTerms, allTerms, intent = inferIntent({}
 }
 
 function splitSentences(text) {
-  return text
-    .replace(/\s+/g, " ")
+  const marker = "\u0000";
+  const abbreviations = /\b(?:e\.g|i\.e|et al|fig|eq|dr|prof|vs|no|inc|approx|dept|vol|pp)\./gi;
+  const protectedText = text.replace(/\s+/g, " ").replace(abbreviations, (match) => match.replaceAll(".", marker));
+  return protectedText
     .split(/(?<=[.!?])\s+(?=[A-Z0-9(])/)
-    .map((sentence) => sentence.trim())
-    .filter((sentence) => sentence.length >= 35 && sentence.length <= 800);
+    .map((sentence) => sentence.replaceAll(marker, ".").trim())
+    .filter((sentence) => sentence.length >= 20 && sentence.length <= 800);
 }
 
 function summarizeSentence(sentence, settings, intent = inferIntent(settings)) {
@@ -857,10 +859,15 @@ function normalizeTerms(terms) {
 function includesTerm(lowerText, term) {
   if (!term) return false;
   const normalized = term.toLowerCase().trim();
-  if (lowerText.includes(normalized)) return true;
-  if (normalized.endsWith("s") && lowerText.includes(normalized.slice(0, -1))) return true;
+  if (matchesTermBoundary(lowerText, normalized)) return true;
+  if (normalized.endsWith("s") && matchesTermBoundary(lowerText, normalized.slice(0, -1))) return true;
   const words = normalized.split(/\s+/).filter((word) => word.length > 2);
-  return words.length > 1 && words.some((word) => lowerText.includes(word.endsWith("s") ? word.slice(0, -1) : word));
+  return words.length > 1 && words.some((word) => matchesTermBoundary(lowerText, word.endsWith("s") ? word.slice(0, -1) : word));
+}
+
+function matchesTermBoundary(text, term) {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^\\p{L}\\p{N}_])${escaped}(?=$|[^\\p{L}\\p{N}_])`, "u").test(text);
 }
 
 function normalizeSpaces(text) {

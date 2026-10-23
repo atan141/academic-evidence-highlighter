@@ -55,7 +55,7 @@ The extension currently has no backend server and no external AI API connection.
 
 ## Website and PDF Access
 
-The extension requests access to websites so it can read the current research page, article page, or PDF for the user-facing evidence-highlighting feature. It does not bypass paywalls, subscriptions, publisher access controls, or DRM.
+The extension requests access to websites so it can read a page when automatic scanning is enabled for that page or when the user explicitly chooses **Scan page**. Automatic scanning defaults to scholarly pages only. Users can pause automatic scanning, choose to scan any page, or choose manual-only scanning. The extension does not bypass paywalls, subscriptions, publisher access controls, or DRM.
 
 When the extension attempts to fetch an accessible PDF link, the browser may include the user's existing site cookies or login session for that request. The extension does not read, store, or transmit those cookies.
 
@@ -65,7 +65,8 @@ Users can:
 
 - Edit or clear research settings in the side panel.
 - Use **Clear all** to clear fields, results, and page highlights.
-- Avoid scanning a page by not clicking **Scan page** or by closing the side panel.
+- Pause automatic scanning in the side panel, use manual-only mode, or choose which pages are scanned.
+- Use **Scan this page once** to scan a single page while paused.
 - Remove the extension from Chrome at any time.
 
 ## Limited Use Statement

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Academic Evidence Highlighter",
   "description": "Review candidate evidence in scholarly search results, article pages, and PDFs.",
-  "version": "0.16.3",
+  "version": "0.17.0",
   "permissions": ["activeTab", "scripting", "storage", "sidePanel"],
   "host_permissions": ["<all_urls>"],
   "background": {
@@ -26,12 +26,10 @@
   "side_panel": {
     "default_path": "extension/sidepanel.html"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["extension/content.js"],
-      "css": ["extension/content.css"],
-      "run_at": "document_idle"
+  "commands": {
+    "toggle-pause": {
+      "suggested_key": { "default": "Alt+Shift+P" },
+      "description": "Pause or resume Evidence Highlighter scanning"
     }
-  ]
+  }
 }
