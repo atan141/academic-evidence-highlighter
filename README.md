@@ -6,7 +6,7 @@ Version 0.17.11 scans scholarly search results, visible article text, modern web
 
 ## Version Snapshots
 
-The archived extension packages and source snapshots are in [`versions/`](versions/README.md): [0.16.3](versions/0.16.3/) is the previous finalized Web Store version, and [0.17.11](versions/0.17.11/) is the current unpublished draft package awaiting review submission. These are folders in the repository, not separate branches. Branches are temporary lines of development; folders keep multiple version snapshots together.
+The archived extension packages and source snapshots are in [`versions/`](versions/README.md): [0.16.3](versions/0.16.3/) is the previous finalized Web Store version, and [0.17.11](versions/0.17.11/) is the latest version snapshot. These are folders in the repository, not separate branches. Branches are temporary lines of development; folders keep multiple version snapshots together.
 
 ## Load It In Chrome
 
