@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Academic Evidence Highlighter",
-  "description": "Review candidate evidence in scholarly search results, article pages, and PDFs.",
-  "version": "0.17.0",
+  "description": "Review candidate evidence in scholarly pages with pauseable, user-controlled scanning.",
+  "version": "0.17.1",
   "permissions": ["activeTab", "scripting", "storage", "sidePanel"],
   "host_permissions": ["<all_urls>"],
   "background": {

@@ -66,7 +66,7 @@ async function init() {
   chrome.storage.onChanged.addListener(handleStorageChange);
   updatePauseUi();
   const initialTab = await getActiveTab();
-  if (!eehPaused && storedScanMode !== "manual" && initialTab?.url && isAutomaticPage(initialTab.url, storedScanMode)) {
+  if (!eehPaused && storedScanMode !== "manual" && initialTab?.url && await isAutomaticPage(initialTab, storedScanMode)) {
     await prefillFromPage();
   }
   await rememberActiveUrl();
@@ -122,7 +122,7 @@ async function rememberActiveUrl() {
 }
 
 async function handleActivePageChanged(tab) {
-  if (eehPaused || !isAutomaticScanningAllowed(storedScanMode) || !isAutomaticPage(tab.url || "", storedScanMode)) {
+  if (eehPaused || !isAutomaticScanningAllowed(storedScanMode) || !await isAutomaticPage(tab, storedScanMode)) {
     setStatus(eehPaused ? "Scanning is paused. Your research question is saved." : "Automatic scanning is off for this page. Click Scan page to scan it once.");
     return;
   }
@@ -204,12 +204,16 @@ async function scanCurrentTab(options = {}) {
         : "Could not extract useful PDF text. Some journal PDFs are protected, image-only, or compressed beyond this prototype.");
     } else if (currentResults.length) {
       setStatus("Review the highlighted sentences. Treat every item as candidate evidence until you verify it.");
+    } else if ((response.pageTextLength || 0) < 50) {
+      setStatus("This page opened, but the extension could not find readable article text. It may use a protected viewer or load the article in a frame. Try the article’s full-text page or Scan saved PDF.");
     } else {
       setStatus("No candidates found. Try broader target terms or open the full-text article page.");
     }
   } catch (error) {
     if (/403|401|forbidden|unauthorized/i.test(error.message)) {
       setStatus("This PDF server blocked extension access. Use Scan saved PDF after saving/downloading the PDF.");
+    } else if (/cannot access contents|host permission|not allowed to access|permission to access this host/i.test(error.message)) {
+      setStatus("Chrome blocked access to this site. Open chrome://extensions, find Evidence Highlighter, open Site access, and allow it on this site or on all sites.");
     } else {
       setStatus(`Could not scan this tab: ${error.message}`);
     }
@@ -284,27 +288,64 @@ function isAutomaticScanningAllowed(mode) {
   return mode !== "manual";
 }
 
-function isAutomaticPage(url, mode) {
-  return mode === "all" || looksScholarly(url);
+async function isAutomaticPage(tab, mode) {
+  if (mode === "all") return true;
+  if (mode === "manual") return false;
+  if (looksScholarly(tab.url || "")) return true;
+  return pageHasScholarlyMetadata(tab.id);
 }
 
 function looksScholarly(url) {
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.toLowerCase();
+    const path = `${parsed.pathname}${parsed.search}${parsed.hash}`.toLowerCase();
+    const scholarlyDomains = [
+      "plos.org", "connectsci.au", "tandfonline.com", "sagepub.com", "frontiersin.org",
+      "mdpi.com", "biorxiv.org", "medrxiv.org", "peerj.com", "cambridge.org",
+      "academic.oup.com", "bmj.com", "thelancet.com", "nejm.org", "wiley.com",
+      "nature.com", "springer.com", "sciencedirect.com", "jstor.org", "doi.org",
+      "pubmed.ncbi.nlm.nih.gov", "semanticscholar.org", "arxiv.org"
+    ];
+    if (scholarlyDomains.some((domain) => host === domain || host.endsWith(`.${domain}`))) return true;
     return /(^|\.)scholar\.google\./.test(host)
-      || /(^|\.)pubmed\.ncbi\.nlm\.nih\.gov$/.test(host)
-      || /(^|\.)arxiv\.org$/.test(host)
-      || /(^|\.)semanticscholar\.org$/.test(host)
-      || /(^|\.)jstor\.org$/.test(host)
-      || /(^|\.)doi\.org$/.test(host)
-      || /(^|\.)springer\.com$/.test(host)
-      || /(^|\.)nature\.com$/.test(host)
-      || /(^|\.)sciencedirect\.com$/.test(host)
-      || /(^|\.)wiley\.com$/.test(host)
       || /(^|\.)oup\.com$/.test(host)
-      || /(^|\.)edu$/.test(host)
-      || /\.pdf(?:$|[?#])/i.test(parsed.pathname + parsed.search + parsed.hash);
+      || /(^|\.)(?:edu|ac\.uk|ac\.au|edu\.au|ac\.nz|ac\.jp|edu\.cn|ac\.kr)$/.test(host)
+      || /\.pdf(?:$|[?#])/i.test(path)
+      || /\/(?:doi|article|articles|article-abstract|abstract|fulltext|full-text|paper|papers|journal|journals|publication|publications)(?:\/|[-?#]|$)/i.test(path)
+        && /\.(?:org|edu|ac\.[a-z]{2,}|edu\.[a-z]{2,})$/i.test(host);
+  } catch {
+    return false;
+  }
+}
+
+async function pageHasScholarlyMetadata(tabId) {
+  if (!tabId) return false;
+  try {
+    const [result] = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        const meta = (name) => document.querySelector(`meta[name="${name}" i]`)?.content?.trim() || "";
+        const citationTitle = meta("citation_title");
+        const citationDoi = meta("citation_doi");
+        const journal = meta("citation_journal_title") || meta("citation_conference_title");
+        const authors = document.querySelectorAll('meta[name="citation_author" i]').length;
+        const scholarlyType = [...document.querySelectorAll('script[type="application/ld+json"]')].some((script) => {
+          try {
+            const parsed = JSON.parse(script.textContent || "null");
+            const entries = Array.isArray(parsed) ? parsed : [parsed];
+            return entries.some((entry) => {
+              const type = Array.isArray(entry?.["@type"]) ? entry["@type"].join(" ") : String(entry?.["@type"] || "");
+              return /ScholarlyArticle|AcademicArticle|MedicalScholarlyArticle/i.test(type);
+            });
+          } catch {
+            return false;
+          }
+        });
+        return Boolean(scholarlyType || (citationTitle && (citationDoi || journal || authors >= 2)));
+      }
+    });
+    return Boolean(result?.result);
   } catch {
     return false;
   }

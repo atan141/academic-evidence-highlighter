@@ -61,10 +61,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message?.type === "EEH_SCAN") {
-    const results = scanPage(message.settings || {});
+    const scan = scanPage(message.settings || {});
     sendResponse({
       ok: true,
-      results,
+      results: scan.results,
+      pageTextLength: scan.pageTextLength,
+      pageBlockCount: scan.pageBlockCount,
       title: document.title,
       url: location.href,
       isPdfLike: location.href.toLowerCase().includes(".pdf"),
@@ -100,6 +102,7 @@ function scanPage(settings) {
 
   const blocks = getReadableBlocks();
   const candidates = [];
+  const pageTextLength = blocks.reduce((total, block) => total + normalizeSpaces(block.innerText || "").length, 0);
 
   blocks.forEach((block, blockIndex) => {
     const text = normalizeSpaces(block.innerText || "");
@@ -136,7 +139,7 @@ function scanPage(settings) {
     if (block) highlightSentence(block, candidate);
   });
 
-  return deduped;
+  return { results: deduped, pageTextLength, pageBlockCount: blocks.length };
 }
 
 function isReferenceBlock(block, text) {

@@ -15,6 +15,7 @@ Academic Evidence Highlighter helps users find and review candidate evidence in 
 The extension uses the following data only for the user-facing evidence-highlighting feature:
 
 - Active tab URL and title
+- Citation metadata and scholarly structured-data tags checked locally in scholarly-only mode
 - Visible page text from the active tab
 - Accessible PDF text
 - PDF files manually selected by the user
@@ -32,6 +33,9 @@ Stored with Chrome storage:
 - Extra terms
 - Sort preference
 - Filter preference
+- Automatic scan mode
+- Pause state
+- One-time version notice dismissal state
 
 Stored only in the current side panel session unless exported by the user:
 
@@ -70,7 +74,7 @@ Used to scan the current tab only when the user opens the extension or starts sc
 
 ### `scripting`
 
-Used to inject or re-inject the content script into the active page when Chrome has not already loaded it.
+Used to check active-page citation metadata in scholarly-only mode and to inject or re-inject the content script into the active page when a page is eligible for scanning or the user explicitly starts a scan.
 
 ### `storage`
 
