@@ -1,6 +1,6 @@
 # Terms of Use for Academic Evidence Highlighter
 
-Effective date: June 4, 2026
+Effective date: October 23, 2026
 
 These Terms of Use describe acceptable use of Academic Evidence Highlighter.
 
@@ -22,11 +22,16 @@ Users are responsible for:
 - Following academic integrity rules, citation standards, and research ethics.
 - Respecting copyright law, publisher terms, paywalls, licenses, and institutional access rules.
 - Using exported CSV files responsibly.
+- Choosing a scan mode appropriate to the current page and not scanning content they are not authorized to use.
 - Not using the extension to copy, redistribute, or republish copyrighted works without permission or a valid legal basis.
 
 ## No Paywall Bypass
 
 The extension does not bypass paywalls, subscriptions, login requirements, DRM, or publisher access controls. It can only scan content that the user's browser can access or files the user manually selects.
+
+## Page Scanning and User Controls
+
+The extension processes text from the current page or a PDF according to the scanning mode selected by the user. Automatic scanning starts in **Scholarly pages only** mode, which checks the page address before loading the page-reading script. An unrecognized page is not read unless the user chooses a one-time scan. If the user selects **Any page** or starts a scan on a page containing personal communications, visible text on that page may be processed locally for candidate evidence. On pages where automatic scanning is allowed, scrolling can trigger scans of newly loaded text. Users can pause automatic scanning; pausing clears displayed results and page highlights while preserving research settings. A scan request while paused asks the user to confirm before resuming.
 
 ## No Professional Advice
 

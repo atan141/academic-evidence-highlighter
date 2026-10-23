@@ -21,6 +21,7 @@ The extension uses the following data only for the user-facing evidence-highligh
 - PDF files manually selected by the user
 - User-entered research question, concepts, and extra terms
 - Scroll events from the active page, used to request scans of newly loaded content when automatic scanning is enabled
+- Personal communications visible on the active page may be processed locally if the user selects **Any page** or explicitly starts a scan on a page displaying email, text, or chat messages. In **Scholarly pages only** mode, unrecognized pages are not read unless the user chooses a one-time scan.
 - Search input values and URL query terms on the active page, used locally to update the research fields after a search changes
 - User interface preferences such as sort and filter choices
 - Generated candidate evidence cards and CSV export content
@@ -49,6 +50,7 @@ Kept only in extension memory while the page remains open unless exported by the
 - Short generated summaries
 - Page/PDF result metadata
 - Accumulated candidate results for the active page and current research settings, kept in memory while the page remains open
+- Scroll events are handled only as a local trigger for rescanning newly loaded content on pages where automatic scanning is allowed; they are not logged or transmitted.
 
 Pausing scanning clears current results and page highlights from open tabs. Research settings remain saved. If the user starts a scan while paused, the extension asks before turning pause off; resuming also scans the active eligible page.
 
@@ -70,9 +72,9 @@ The extension does not collect, sell, or transmit:
 
 ## Third-Party Sharing
 
-No user data is shared with third parties by this version of the extension.
+The extension does not send page text, PDF text, research questions, or candidate results to the developer or to advertising, analytics, data-broker, or AI services. Research fields and interface preferences use Chrome Storage Sync, which may sync them across the user's signed-in Chrome browsers according to Chrome's sync settings; the developer does not receive those values.
 
-This version has no backend server, no analytics, no advertising SDK, and no external AI API call.
+This version has no developer backend server, analytics, advertising SDK, or external AI API call.
 
 ## Permission Justifications
 
@@ -122,7 +124,11 @@ No.
 
 ### Does the extension collect web browsing activity?
 
-The extension accesses the active tab's URL, title, and visible content only to scan the page the user is viewing. It does not track browsing history across sites and does not transmit browsing activity to the developer.
+The extension accesses the active tab's URL and title to identify and label the current page. It does not maintain a history of visited sites. It handles scroll events locally on pages where scanning is allowed to trigger scans of newly loaded text; it does not log or transmit those events.
+
+### Does the extension process personal communications or user activity?
+
+The extension can process visible email, text, or chat content if the user selects **Any page** or explicitly scans a page displaying that content. It does not read unrecognized pages in **Scholarly pages only** mode unless the user chooses a one-time scan. Scroll activity is used only as a local trigger for scanning newly loaded text on an allowed page. These data are processed locally and are not sent to the developer.
 
 ### Does the extension use remote code?
 
