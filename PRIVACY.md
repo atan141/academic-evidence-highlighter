@@ -75,7 +75,7 @@ Users can:
 - Edit or clear research settings in the side panel.
 - Use **Clear all** to clear fields, results, and page highlights.
 - Each open tab restores its own research question and concepts when you return to it; **Clear all** clears those fields for the current tab.
-- Pause automatic scanning in the side panel, use manual-only mode, or choose which pages are scanned.
+- Pause automatic scanning in the side panel, use manual-only mode, or choose which pages are scanned. Pausing clears current results and page highlights from open tabs while keeping the research settings. If the user starts a scan while paused, the extension asks before turning pause off; resuming scans the active eligible page.
 - Use **Scan this page once** to scan a single page while paused.
 - Remove the extension from Chrome at any time.
 

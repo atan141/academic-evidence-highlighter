@@ -50,6 +50,8 @@ Kept only in extension memory while the page remains open unless exported by the
 - Page/PDF result metadata
 - Accumulated candidate results for the active page and current research settings, kept in memory while the page remains open
 
+Pausing scanning clears current results and page highlights from open tabs. Research settings remain saved. If the user starts a scan while paused, the extension asks before turning pause off; resuming also scans the active eligible page.
+
 ## Data the Extension Does Not Collect
 
 The extension does not collect, sell, or transmit:

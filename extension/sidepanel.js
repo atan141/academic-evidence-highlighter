@@ -22,6 +22,9 @@ const countEl = document.querySelector("#count");
 const countCaptionEl = document.querySelector("#countCaption");
 const resultsEl = document.querySelector("#results");
 const emptyStateEl = document.querySelector("#emptyState");
+const pausedScanDialog = document.querySelector("#pausedScanDialog");
+const keepPausedButton = document.querySelector("#keepPausedButton");
+const resumeAndScanButton = document.querySelector("#resumeAndScanButton");
 const FIELD_KEYS = Object.keys(fields);
 const UI_PREF_KEYS = ["sortMode", "confidenceFilter"];
 const SCHOLARLY_DOMAINS = [
@@ -85,12 +88,20 @@ async function init() {
 
   scanButton.addEventListener("click", scanCurrentTab);
   pauseButton.addEventListener("click", togglePause);
+  keepPausedButton.addEventListener("click", () => pausedScanDialog.close("stay"));
+  resumeAndScanButton.addEventListener("click", () => pausedScanDialog.close("resume"));
   scanMode.addEventListener("change", saveScanMode);
   dismissUpgradeNote.addEventListener("click", async () => {
     upgradeNote.hidden = true;
     await chrome.storage.sync.set({ showV17Note: false });
   });
-  scanFileButton.addEventListener("click", () => pdfFileInput.click());
+  scanFileButton.addEventListener("click", async () => {
+    if (eehPaused) {
+      if (!await confirmResumeForScan()) return;
+      await setPausedState(false);
+    }
+    pdfFileInput.click();
+  });
   pdfFileInput.addEventListener("change", scanSelectedPdf);
   clearButton.addEventListener("click", clearAll);
   exportButton.addEventListener("click", exportCsv);
@@ -387,6 +398,11 @@ async function getActiveTab() {
 async function scanCurrentTab(options = {}) {
   const { auto = false } = options;
   if (auto && (eehPaused || !isAutomaticScanningAllowed(storedScanMode))) return;
+  if (!auto && eehPaused) {
+    const confirmed = await confirmResumeForScan();
+    if (!confirmed) return;
+    await setPausedState(false);
+  }
   let tab = await getActiveTab();
   if (!tab?.id) return;
   const scanModeAtStart = storedScanMode;
@@ -511,21 +527,60 @@ async function scanCurrentTab(options = {}) {
 }
 
 async function togglePause() {
-  eehPaused = !eehPaused;
+  if (eehPaused) {
+    await resumeScanning();
+    return;
+  }
+  await pauseScanning();
+}
+
+async function pauseScanning() {
+  await setPausedState(true);
+  await clearPausedScanState();
+}
+
+async function clearPausedScanState() {
+  currentResults = [];
+  currentResultContextKey = "";
+  renderResults();
+  clearEmptyState();
+
+  const tabs = await chrome.tabs.query({});
+  await Promise.all(tabs.filter((tab) => tab.id).map(async (tab) => {
+    try {
+      await chrome.tabs.sendMessage(tab.id, { type: "EEH_DISABLE" });
+    } catch {
+      // No page reader is loaded for this tab, so there is nothing to clear.
+    }
+  }));
+
+  setEmptyState("Scanning is paused", "Current results and page highlights were cleared. Resume scanning to scan eligible pages again.");
+  setStatus("Scanning paused. Current results and page highlights were cleared.");
+}
+
+async function resumeScanning() {
+  await setPausedState(false);
+  setStatus("Scanning resumed. Checking this page now...");
+  await resumeActivePage();
+}
+
+async function setPausedState(paused) {
+  eehPaused = paused;
   await chrome.storage.sync.set({ eehPaused });
   updatePauseUi();
-  if (eehPaused) {
-    setStatus("Scanning paused. Current results and page highlights are kept in memory.");
-  } else {
-    lastActiveUrl = "";
-    setStatus("Scanning resumed.");
-    const tab = await getActiveTab();
-    if (tab?.url) {
-      lastActiveUrl = tab.url;
-      lastActiveTabId = tab.id;
-      await handleActivePageChanged(tab);
-    }
+}
+
+function confirmResumeForScan() {
+  if (!pausedScanDialog?.showModal) {
+    return Promise.resolve(window.confirm("Scanning is paused. Resume scanning and scan this page now? This will turn off Pause scanning."));
   }
+  return new Promise((resolve) => {
+    const onClose = () => resolve(pausedScanDialog.returnValue === "resume");
+    pausedScanDialog.returnValue = "";
+    pausedScanDialog.addEventListener("close", onClose, { once: true });
+    pausedScanDialog.showModal();
+    resumeAndScanButton.focus();
+  });
 }
 
 async function saveScanMode() {
@@ -571,16 +626,25 @@ function updatePauseUi() {
 function handleStorageChange(changes, areaName) {
   if (areaName !== "sync") return;
   if (changes.eehPaused) {
+    const wasPaused = eehPaused;
     eehPaused = Boolean(changes.eehPaused.newValue);
     updatePauseUi();
-    if (eehPaused) {
-      setStatus("Scanning paused. Current results and page highlights are kept in memory.");
-    }
+    if (eehPaused && !wasPaused) clearPausedScanState();
+    if (!eehPaused && wasPaused) resumeActivePage();
   }
   if (changes.scanMode && ["scholarly", "all", "manual"].includes(changes.scanMode.newValue)) {
     storedScanMode = changes.scanMode.newValue;
     scanMode.value = storedScanMode;
   }
+}
+
+async function resumeActivePage() {
+  lastActiveUrl = "";
+  const tab = await getActiveTab();
+  if (!tab?.url) return;
+  lastActiveUrl = tab.url;
+  lastActiveTabId = tab.id;
+  await handleActivePageChanged(tab);
 }
 
 function isAutomaticScanningAllowed(mode) {

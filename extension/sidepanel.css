@@ -230,6 +230,35 @@ button.primary {
   display: none;
 }
 
+.pausedScanDialog {
+  border: 1px solid #c6d0da;
+  border-radius: 10px;
+  box-shadow: 0 12px 36px rgba(20, 35, 50, 0.24);
+  color: #1e252b;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 18px;
+}
+
+.pausedScanDialog::backdrop {
+  background: rgba(18, 29, 40, 0.35);
+}
+
+.pausedScanDialog h2 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+
+.pausedScanDialog p {
+  margin-bottom: 16px;
+}
+
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .emptyState strong {
   font-size: 14px;
 }

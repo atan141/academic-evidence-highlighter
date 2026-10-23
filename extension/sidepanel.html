@@ -70,6 +70,15 @@
 
       <section id="emptyState" class="emptyState" aria-live="polite" hidden></section>
 
+      <dialog id="pausedScanDialog" class="pausedScanDialog" aria-labelledby="pausedScanTitle">
+        <h2 id="pausedScanTitle">Scanning is paused</h2>
+        <p>Resume scanning and scan this page now? This will turn off Pause scanning.</p>
+        <div class="dialogActions">
+          <button id="keepPausedButton" type="button">Keep paused</button>
+          <button id="resumeAndScanButton" class="primary" type="button">Resume and scan</button>
+        </div>
+      </dialog>
+
       <section class="resultControls">
         <label>
           Sort

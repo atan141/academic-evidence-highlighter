@@ -25,7 +25,14 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 chrome.commands.onCommand.addListener(async (command) => {
   if (command !== "toggle-pause") return;
   const { eehPaused = false } = await chrome.storage.sync.get("eehPaused");
-  await chrome.storage.sync.set({ eehPaused: !eehPaused });
+  const shouldPause = !eehPaused;
+  await chrome.storage.sync.set({ eehPaused: shouldPause });
+  if (shouldPause) {
+    const tabs = await chrome.tabs.query({});
+    await Promise.all(tabs.filter((tab) => tab.id).map((tab) =>
+      chrome.tabs.sendMessage(tab.id, { type: "EEH_DISABLE" }).catch(() => {})
+    ));
+  }
 });
 
 async function updatePauseBadge() {
