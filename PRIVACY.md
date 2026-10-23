@@ -1,6 +1,6 @@
 # Privacy Policy for Academic Evidence Highlighter
 
-Effective date: June 4, 2026
+Effective date: October 23, 2026
 
 Academic Evidence Highlighter is a Chrome extension that helps users find candidate evidence in scholarly search results, article pages, and PDFs. This policy explains what information the extension uses and how it handles that information.
 
@@ -22,6 +22,7 @@ The extension may use the following information when the user opens or scans a p
 - Scroll events from a page where the page-reading script has been loaded, used to request another scan of newly loaded content when automatic scanning is enabled.
 - Scan mode, pause state, and whether the one-time version 0.17.0 notice was dismissed.
 - Candidate evidence results generated from the current page or PDF.
+- A separate set of research fields for each open tab, held in Chrome session storage so switching tabs restores that tab's question and concepts. This tab-to-settings map is cleared when a tab closes or the browser session ends.
 
 ## How the Information Is Used
 
@@ -49,7 +50,7 @@ The extension uses Chrome storage to remember:
 - Pause state
 - One-time version notice dismissal state
 
-This storage is used so users do not have to re-enter the same settings on every tab. Depending on the user's Chrome settings, Chrome may sync this information across the user's signed-in Chrome browsers. The developer does not receive this stored information.
+Chrome Sync stores the current research fields and interface settings. Separately, Chrome session storage maps each open tab to its own research question, concepts, and extra terms so switching tabs restores that tab's context. The tab map is memory-only and is cleared when a tab closes or the browser session ends. Depending on the user's Chrome settings, the current field values may sync across signed-in Chrome browsers; the developer does not receive this stored information.
 
 Candidate evidence results are kept in the extension side panel and in memory in the current page while the user is working, so results from content loaded during scrolling can be accumulated. They are not uploaded to the developer. CSV files are created only when the user clicks **Export CSV**.
 
@@ -73,6 +74,7 @@ Users can:
 
 - Edit or clear research settings in the side panel.
 - Use **Clear all** to clear fields, results, and page highlights.
+- Each open tab restores its own research question and concepts when you return to it; **Clear all** clears those fields for the current tab.
 - Pause automatic scanning in the side panel, use manual-only mode, or choose which pages are scanned.
 - Use **Scan this page once** to scan a single page while paused.
 - Remove the extension from Chrome at any time.

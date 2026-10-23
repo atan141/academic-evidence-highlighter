@@ -11,6 +11,13 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
 chrome.runtime.onStartup.addListener(updatePauseBadge);
 
+chrome.tabs.onRemoved.addListener((tabId) => {
+  chrome.storage.session.get("tabResearchSettings").then(({ tabResearchSettings = {} }) => {
+    delete tabResearchSettings[String(tabId)];
+    return chrome.storage.session.set({ tabResearchSettings });
+  }).catch(() => {});
+});
+
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === "sync" && changes.eehPaused) updatePauseBadge();
 });

@@ -41,6 +41,10 @@ const NON_SCHOLARLY_DOMAINS = [
 let currentResults = [];
 let currentResultContextKey = "";
 let pageInfo = {};
+let tabResearchSettings = {};
+let currentSettingsTabId = null;
+let tabSettingsWriteQueue = Promise.resolve();
+const closedTabIds = new Set();
 let pdfjsLibPromise = null;
 let lastAutoQuestion = "";
 let refreshTimer = null;
@@ -61,7 +65,11 @@ let storedScanMode = "scholarly";
 init();
 
 async function init() {
-  const saved = await chrome.storage.sync.get([...FIELD_KEYS, ...UI_PREF_KEYS, "eehPaused", "scanMode", "showV17Note"]);
+  const [saved, sessionSaved] = await Promise.all([
+    chrome.storage.sync.get([...FIELD_KEYS, ...UI_PREF_KEYS, "eehPaused", "scanMode", "showV17Note"]),
+    chrome.storage.session.get("tabResearchSettings")
+  ]);
+  tabResearchSettings = sessionSaved.tabResearchSettings || {};
   Object.entries(fields).forEach(([key, input]) => {
     input.value = saved[key] || "";
     input.addEventListener("input", saveSettings);
@@ -89,6 +97,8 @@ async function init() {
   sortMode.addEventListener("change", saveUiPreferencesAndRender);
   confidenceFilter.addEventListener("change", saveUiPreferencesAndRender);
   chrome.storage.onChanged.addListener(handleStorageChange);
+  chrome.tabs.onRemoved.addListener(handleTabRemoved);
+  chrome.tabs.onActivated.addListener(handleTabActivated);
   chrome.runtime.onMessage.addListener((message, sender) => {
     if (message?.type === "EEH_SCROLL_ACTIVITY") handleContentScroll(sender);
   });
@@ -101,7 +111,49 @@ async function init() {
 }
 
 async function saveSettings() {
-  await chrome.storage.sync.set(getSettings());
+  const settings = getSettings();
+  const tabId = currentSettingsTabId;
+  await chrome.storage.sync.set(settings);
+  if (tabId !== null) await rememberTabResearchSettings(tabId, settings);
+}
+
+function rememberTabResearchSettings(tabId, settings) {
+  const key = String(tabId);
+  if (closedTabIds.has(key)) return Promise.resolve();
+  tabResearchSettings[key] = { ...settings };
+  tabSettingsWriteQueue = tabSettingsWriteQueue
+    .catch(() => {})
+    .then(() => chrome.storage.session.set({ tabResearchSettings }));
+  return tabSettingsWriteQueue;
+}
+
+async function handleTabRemoved(tabId) {
+  const key = String(tabId);
+  closedTabIds.add(key);
+  delete tabResearchSettings[key];
+  tabSettingsWriteQueue = tabSettingsWriteQueue
+    .catch(() => {})
+    .then(() => chrome.storage.session.set({ tabResearchSettings }));
+  await tabSettingsWriteQueue;
+}
+
+async function handleTabActivated(activeInfo) {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    const activeTab = await getActiveTab();
+    if (activeTab?.id !== tab.id) return;
+    lastActiveUrl = tab.url || "";
+    lastActiveTabId = tab.id;
+    await handleActivePageChanged(tab);
+  } catch {
+    // Ignore transient tab activation races while Chrome changes windows.
+  }
+}
+
+function restoreResearchSettings(settings) {
+  Object.entries(fields).forEach(([key, input]) => {
+    input.value = settings?.[key] || "";
+  });
 }
 
 async function saveUiPreferencesAndRender() {
@@ -210,11 +262,25 @@ async function rememberActiveUrl() {
 
 async function handleActivePageChanged(tab) {
   const generation = ++activePageGeneration;
+  if (!tab?.id) return;
+  const outgoingTabId = currentSettingsTabId;
+  const outgoingSettings = getSettings();
+  if (outgoingTabId !== null) await rememberTabResearchSettings(outgoingTabId, outgoingSettings);
+  if (generation !== activePageGeneration) return;
+  currentSettingsTabId = tab.id;
+  const restoredSettings = tabResearchSettings[String(tab.id)];
+  if (restoredSettings) {
+    restoreResearchSettings(restoredSettings);
+    lastAutoQuestion = restoredSettings.question || "";
+    await chrome.storage.sync.set(restoredSettings);
+  } else {
+    await rememberTabResearchSettings(tab.id, getSettings());
+  }
+  if (generation !== activePageGeneration) return;
   currentResults = [];
   currentResultContextKey = "";
   pageInfo = { title: tab?.title || "", url: tab?.url || "", isPdfLike: looksLikePdfUrl(tab?.url || "") };
   renderResults();
-  if (!tab?.id) return;
   if (eehPaused || !isAutomaticScanningAllowed(storedScanMode)) {
     setEmptyState(
       eehPaused ? "Automatic scanning is paused" : "Automatic scanning is set to manual",
@@ -609,6 +675,7 @@ async function clearAll() {
     input.value = "";
   });
   await chrome.storage.sync.remove(FIELD_KEYS);
+  if (currentSettingsTabId !== null) await rememberTabResearchSettings(currentSettingsTabId, getSettings());
   currentResults = [];
   currentResultContextKey = "";
   renderResults();

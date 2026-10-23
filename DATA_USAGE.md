@@ -24,6 +24,7 @@ The extension uses the following data only for the user-facing evidence-highligh
 - Search input values and URL query terms on the active page, used locally to update the research fields after a search changes
 - User interface preferences such as sort and filter choices
 - Generated candidate evidence cards and CSV export content
+- Per-tab research questions, concepts, and extra terms held in Chrome session storage and removed when tabs close or the browser session ends
 
 ## Data the Extension Stores
 
@@ -38,6 +39,8 @@ Stored with Chrome storage:
 - Automatic scan mode
 - Pause state
 - One-time version notice dismissal state
+
+The active research fields are also associated with their open tab in Chrome session storage. This lets the side panel restore each tab's question and concepts without keeping a persistent results database.
 
 Kept only in extension memory while the page remains open unless exported by the user:
 

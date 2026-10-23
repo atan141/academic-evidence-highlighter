@@ -216,8 +216,7 @@ function scanPage(settings) {
   deduped.forEach((candidate) => {
     const block = blocks.find((item) => normalizeSpaces(item.innerText || "").includes(candidate.sentence));
     const element = block?.element || block;
-    candidate.canHighlight = Boolean(element && !block?.isTextFallback);
-    if (candidate.canHighlight) highlightSentence(element, candidate);
+    candidate.canHighlight = Boolean(element && !block?.isTextFallback && highlightSentence(element, candidate));
     const key = normalizeSpaces(candidate.sentence).toLowerCase();
     accumulatedResults.set(key, candidate);
   });
@@ -258,7 +257,10 @@ function getReadableBlocks() {
     .filter((el) => isVisible(el))
     .filter((el) => {
       const text = normalizeSpaces(el.innerText || "");
-      return text.length >= 35 && text.length <= 1200;
+      // Long abstract paragraphs are common on journal pages. Sentence
+      // splitting below handles them; dropping them hid the actual findings
+      // while shorter bibliography entries were still scanned.
+      return text.length >= 35 && text.length <= 8000;
     })
     .filter((el) => {
       const childText = [...el.querySelectorAll(selector)]
@@ -713,30 +715,54 @@ function highlightSentence(block, candidate) {
   const nodes = [];
   while (walker.nextNode()) nodes.push(walker.currentNode);
 
+  // Publisher pages often split a sentence across inline elements (emphasis,
+  // links, superscripts). Match normalized text across nodes, then wrap each
+  // text fragment separately so Range.surroundContents never crosses markup.
+  let normalized = "";
+  const positions = [];
+  let pendingSpace = null;
   for (const node of nodes) {
     const text = node.nodeValue || "";
-    const compactCandidate = compactForSearch(candidate.sentence);
-    const compactNode = compactForSearch(text);
-    const compactIndex = compactNode.indexOf(compactCandidate);
+    for (let index = 0; index < text.length; index += 1) {
+      const char = text[index];
+      if (/\s/.test(char)) {
+        if (normalized && !normalized.endsWith(" ") && !pendingSpace) pendingSpace = { node, index };
+        continue;
+      }
+      if (pendingSpace) {
+        normalized += " ";
+        positions.push(pendingSpace);
+        pendingSpace = null;
+      }
+      normalized += char.toLowerCase();
+      positions.push({ node, index });
+    }
+  }
 
-    if (compactIndex === -1) continue;
+  const target = normalizeSpaces(candidate.sentence).toLowerCase();
+  const matchStart = normalized.indexOf(target);
+  if (matchStart < 0) return false;
+  const matchEnd = matchStart + target.length;
+  const fragments = [];
+  for (let position = matchStart; position < matchEnd; position += 1) {
+    const { node, index } = positions[position];
+    const previous = fragments[fragments.length - 1];
+    if (previous && previous.node === node && previous.end === index) previous.end += 1;
+    else fragments.push({ node, start: index, end: index + 1 });
+  }
 
-    const index = approximateOriginalIndex(text, compactNode, compactIndex);
-    const length = Math.min(text.length - index, candidate.sentence.length);
+  for (const fragment of fragments.reverse()) {
     const range = document.createRange();
-    range.setStart(node, index);
-    range.setEnd(node, index + length);
-
+    range.setStart(fragment.node, fragment.start);
+    range.setEnd(fragment.node, fragment.end);
     const mark = document.createElement("mark");
     mark.className = "eeh-highlight";
     mark.dataset.eehId = candidate.id;
     mark.dataset.confidence = candidate.confidence;
     range.surroundContents(mark);
     emphasizeAnswerTerms(mark, candidate.answerTerms || []);
-    return;
   }
-
-  return false;
+  return fragments.length > 0;
 }
 
 function clearHighlights() {
@@ -1060,14 +1086,6 @@ function normalizeSpaces(text) {
 
 function compactForSearch(text) {
   return normalizeSpaces(text).toLowerCase();
-}
-
-function approximateOriginalIndex(original, compactOriginal, compactIndex) {
-  const prefix = compactOriginal.slice(0, compactIndex);
-  for (let i = 0; i < original.length; i += 1) {
-    if (compactForSearch(original.slice(0, i)).length >= prefix.length) return i;
-  }
-  return 0;
 }
 
 function isVisible(el) {
