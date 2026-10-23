@@ -24,6 +24,19 @@ const resultsEl = document.querySelector("#results");
 const emptyStateEl = document.querySelector("#emptyState");
 const FIELD_KEYS = Object.keys(fields);
 const UI_PREF_KEYS = ["sortMode", "confidenceFilter"];
+const SCHOLARLY_DOMAINS = [
+  "plos.org", "connectsci.au", "tandfonline.com", "sagepub.com", "frontiersin.org",
+  "mdpi.com", "biorxiv.org", "medrxiv.org", "peerj.com", "cambridge.org",
+  "academic.oup.com", "bmj.com", "thelancet.com", "nejm.org", "wiley.com",
+  "nature.com", "springer.com", "sciencedirect.com", "jstor.org", "doi.org",
+  "pubmed.ncbi.nlm.nih.gov", "semanticscholar.org", "arxiv.org"
+];
+const NON_SCHOLARLY_DOMAINS = [
+  "facebook.com", "fb.com", "messenger.com", "instagram.com", "threads.net",
+  "x.com", "twitter.com", "tiktok.com", "linkedin.com", "reddit.com",
+  "whatsapp.com", "youtube.com", "youtu.be", "pinterest.com", "snapchat.com",
+  "discord.com", "twitch.tv"
+];
 
 let currentResults = [];
 let currentResultContextKey = "";
@@ -225,15 +238,7 @@ async function handleActivePageChanged(tab) {
   const autoEligible = await isAutomaticPage(tab, storedScanMode);
   if (generation !== activePageGeneration) return;
   if (!autoEligible) {
-    setEmptyState(
-      "This page wasn’t recognized as scholarly",
-      "Scholarly pages only is on, so automatic scanning skipped this page. The page may still be an article that our checks didn’t recognize. Try Scan page once, or switch Automatic scanning to Any page.",
-      [
-        { label: "Scan this page once", action: () => scanCurrentTab() },
-        { label: "Use Any page", action: () => { scanMode.value = "all"; saveScanMode(); } }
-      ]
-    );
-    setStatus("Automatic scan skipped: this page did not match the scholarly-page checks. You can scan it once or change the setting.");
+    showScholarlyPageSkipped();
     return;
   }
   clearEmptyState();
@@ -261,15 +266,7 @@ async function autoScanCurrentTab() {
   const stillActive = await getActiveTab();
   if (stillActive?.id !== activeTab.id) return;
   if (!autoEligible) {
-    setEmptyState(
-      "This page wasn’t recognized as scholarly",
-      "Scholarly pages only is on, so automatic scanning skipped this page. The page may still be an article that our checks didn’t recognize. Try Scan page once, or switch Automatic scanning to Any page.",
-      [
-        { label: "Scan this page once", action: () => scanCurrentTab() },
-        { label: "Use Any page", action: () => { scanMode.value = "all"; saveScanMode(); } }
-      ]
-    );
-    setStatus("Automatic scan skipped: this page did not match the scholarly-page checks.");
+    showScholarlyPageSkipped();
     return;
   }
   const settings = getSettings();
@@ -300,7 +297,34 @@ async function getActiveTab() {
 async function scanCurrentTab(options = {}) {
   const { auto = false } = options;
   if (auto && (eehPaused || !isAutomaticScanningAllowed(storedScanMode))) return;
+  let tab = await getActiveTab();
+  if (!tab?.id) return;
+  const scanModeAtStart = storedScanMode;
+  if (auto) {
+    const eligible = await isAutomaticPage(tab, scanModeAtStart);
+    const activeAfterCheck = await getActiveTab();
+    if (activeAfterCheck?.id !== tab.id || eehPaused || storedScanMode !== scanModeAtStart) return;
+    if (!eligible) {
+      showScholarlyPageSkipped();
+      return;
+    }
+  }
   await prefillFromPage({ forceScan: false, silent: true });
+  let activeAfterPrefill = await getActiveTab();
+  if (activeAfterPrefill?.id !== tab.id || (auto && (eehPaused || storedScanMode !== scanModeAtStart))) return;
+  if (auto) {
+    const eligible = await isAutomaticPage(activeAfterPrefill, scanModeAtStart);
+    const activeAtDispatch = await getActiveTab();
+    if (activeAtDispatch?.id !== activeAfterPrefill.id
+      || activeAtDispatch?.url !== activeAfterPrefill.url
+      || eehPaused
+      || storedScanMode !== scanModeAtStart) return;
+    if (!eligible) {
+      showScholarlyPageSkipped();
+      return;
+    }
+  }
+  tab = activeAfterPrefill;
   await saveSettings();
   clearEmptyState();
   setStatus(auto ? "Auto-scanning this page..." : "Scanning visible article text...");
@@ -308,9 +332,6 @@ async function scanCurrentTab(options = {}) {
   scanInProgress = true;
 
   try {
-    const tab = await getActiveTab();
-    if (!tab?.id) throw new Error("No active tab found.");
-
     let response;
     if (looksLikeLocalPdfUrl(tab.url || "")) {
       setStatus("Chrome is showing a local PDF viewer. Use Scan saved PDF to choose the downloaded file directly.");
@@ -318,7 +339,8 @@ async function scanCurrentTab(options = {}) {
     } else if (looksLikePdfUrl(tab.url || "")) {
       response = await scanPdfUrl(tab.url, tab.title || "PDF");
     } else {
-      response = await sendPageMessage(tab.id, "EEH_SCAN");
+      response = await sendPageMessage(tab.id, "EEH_SCAN", auto ? { automatic: true, expectedUrl: tab.url } : {});
+      if (response?.skipped) return;
       if ((!response.results || response.results.length === 0) && response.pdfLinks?.length) {
         setStatus("No page-text matches. Trying the first PDF link...");
         response = await scanPdfUrl(response.pdfLinks[0], response.title || tab.title || "PDF");
@@ -345,6 +367,8 @@ async function scanCurrentTab(options = {}) {
       setStatus(currentResults.length
         ? "Scanned PDF text. Built-in PDF viewers cannot be highlighted yet, so review the evidence cards here."
         : "Could not extract useful PDF text. Some journal PDFs are protected, image-only, or compressed beyond this prototype.");
+    } else if (currentResults.length && currentResults.every((result) => result.sourceType === "video_title")) {
+      setStatus(`Found ${currentResults.length} YouTube video title${currentResults.length === 1 ? "" : "s"} matching your terms. Titles are not evidence; open a video description or transcript to scan study content.`);
     } else if (currentResults.length) {
       setStatus(`Scanned the content loaded so far and found ${currentResults.length} candidate sentence${currentResults.length === 1 ? "" : "s"}. On feeds, keep scrolling to load and scan more; earlier results stay here. Verify each candidate.`);
     } else if ((response.pageTextLength || 0) < 50) {
@@ -358,8 +382,11 @@ async function scanCurrentTab(options = {}) {
       ]);
       setStatus(message);
     } else {
-      const message = "The text loaded so far was readable, but no sentences matched your current question and concepts. On feeds or pages that load content as you scroll, keep scrolling to load more; the extension will scan new content and keep earlier results. You can also try broader terms.";
-      setEmptyState("No matching candidate sentences", message);
+      const isYouTubeResults = isYouTubeResultsPage(response.url || tab.url);
+      const message = isYouTubeResults
+        ? "YouTube search results mainly contain video titles. None matched your current terms strongly enough to show. Titles are not evidence; open a video description or transcript and scan that text for study findings."
+        : "The text loaded so far was readable, but no sentences matched your current question and concepts. On feeds or pages that load content as you scroll, keep scrolling to load more; the extension will scan new content and keep earlier results. You can also try broader terms.";
+      setEmptyState(isYouTubeResults ? "No matching YouTube video titles" : "No matching candidate sentences", message);
       setStatus(message);
     }
   } catch (error) {
@@ -454,11 +481,34 @@ function isAutomaticScanningAllowed(mode) {
   return mode !== "manual";
 }
 
+function showScholarlyPageSkipped() {
+  setEmptyState(
+    "This page wasn’t recognized as scholarly",
+    "Scholarly pages only is on, so automatic scanning skipped this page. The page may still be an article that our checks didn’t recognize. Try Scan page once, or switch Automatic scanning to Any page.",
+    [
+      { label: "Scan this page once", action: () => scanCurrentTab() },
+      { label: "Use Any page", action: () => { scanMode.value = "all"; saveScanMode(); } }
+    ]
+  );
+  setStatus("Automatic scan skipped: this page did not match the scholarly-page checks. You can scan it once or change the setting.");
+}
+
 async function isAutomaticPage(tab, mode) {
   if (mode === "all") return true;
   if (mode === "manual") return false;
-  if (looksScholarly(tab.url || "")) return true;
+  const url = tab.url || "";
+  if (isKnownNonScholarlyUrl(url)) return false;
+  if (looksScholarly(url)) return true;
   return pageHasScholarlyMetadata(tab.id);
+}
+
+function isKnownNonScholarlyUrl(url) {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return NON_SCHOLARLY_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+  } catch {
+    return false;
+  }
 }
 
 function looksScholarly(url) {
@@ -466,14 +516,8 @@ function looksScholarly(url) {
     const parsed = new URL(url);
     const host = parsed.hostname.toLowerCase();
     const path = `${parsed.pathname}${parsed.search}${parsed.hash}`.toLowerCase();
-    const scholarlyDomains = [
-      "plos.org", "connectsci.au", "tandfonline.com", "sagepub.com", "frontiersin.org",
-      "mdpi.com", "biorxiv.org", "medrxiv.org", "peerj.com", "cambridge.org",
-      "academic.oup.com", "bmj.com", "thelancet.com", "nejm.org", "wiley.com",
-      "nature.com", "springer.com", "sciencedirect.com", "jstor.org", "doi.org",
-      "pubmed.ncbi.nlm.nih.gov", "semanticscholar.org", "arxiv.org"
-    ];
-    if (scholarlyDomains.some((domain) => host === domain || host.endsWith(`.${domain}`))) return true;
+    if (isKnownNonScholarlyUrl(url)) return false;
+    if (SCHOLARLY_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`))) return true;
     return /(^|\.)scholar\.google\./.test(host)
       || /(^|\.)oup\.com$/.test(host)
       || /(^|\.)(?:edu|ac\.uk|ac\.au|edu\.au|ac\.nz|ac\.jp|edu\.cn|ac\.kr)$/.test(host)
@@ -499,16 +543,26 @@ async function pageHasScholarlyMetadata(tabId) {
         const scholarlyType = [...document.querySelectorAll('script[type="application/ld+json"]')].some((script) => {
           try {
             const parsed = JSON.parse(script.textContent || "null");
-            const entries = Array.isArray(parsed) ? parsed : [parsed];
-            return entries.some((entry) => {
+            const entries = Array.isArray(parsed) ? [...parsed] : [parsed];
+            while (entries.length) {
+              const entry = entries.pop();
+              if (!entry || typeof entry !== "object") continue;
+              if (Array.isArray(entry)) {
+                entries.push(...entry);
+                continue;
+              }
+              if (Array.isArray(entry["@graph"])) entries.push(...entry["@graph"]);
               const type = Array.isArray(entry?.["@type"]) ? entry["@type"].join(" ") : String(entry?.["@type"] || "");
-              return /ScholarlyArticle|AcademicArticle|MedicalScholarlyArticle/i.test(type);
-            });
+              if (/ScholarlyArticle|AcademicArticle|MedicalScholarlyArticle/i.test(type)) return true;
+            }
+            return false;
           } catch {
             return false;
           }
         });
-        return Boolean(scholarlyType || (citationTitle && (citationDoi || journal || authors >= 2)));
+        const strongDoiCitation = Boolean(citationTitle && citationDoi);
+        const journalCitation = Boolean(citationTitle && journal && authors >= 1);
+        return Boolean(scholarlyType || strongDoiCitation || journalCitation);
       }
     });
     return Boolean(result?.result);
@@ -585,9 +639,10 @@ function mergeCandidateResults(existing, incoming) {
 function renderResults() {
   const visibleResults = getVisibleResults();
   countEl.textContent = String(visibleResults.length);
-  countCaptionEl.textContent = currentResults.length > visibleResults.length
-    ? `shown of ${currentResults.length} candidate sentences`
-    : "candidate sentences";
+  const titleOnlyResults = currentResults.length > 0 && currentResults.every((result) => result.sourceType === "video_title");
+  countCaptionEl.textContent = titleOnlyResults
+    ? (currentResults.length > visibleResults.length ? `shown of ${currentResults.length} video titles (not evidence)` : "video titles (not evidence)")
+    : (currentResults.length > visibleResults.length ? `shown of ${currentResults.length} candidate sentences` : "candidate sentences");
   exportButton.disabled = currentResults.length === 0;
   resultsEl.replaceChildren();
 
@@ -777,6 +832,16 @@ function setStatus(message) {
   statusEl.textContent = message;
 }
 
+function isYouTubeResultsPage(url = "") {
+  try {
+    const parsed = new URL(url);
+    return (parsed.hostname === "youtube.com" || parsed.hostname.endsWith(".youtube.com"))
+      && parsed.pathname.startsWith("/results");
+  } catch {
+    return false;
+  }
+}
+
 function setEmptyState(title, message, actions = []) {
   const heading = document.createElement("strong");
   heading.textContent = title;
@@ -870,17 +935,19 @@ async function clearPageHighlightsOnly() {
   }
 }
 
-async function sendPageMessage(tabId, type) {
+async function sendPageMessage(tabId, type, extra = {}) {
   try {
     return await chrome.tabs.sendMessage(tabId, {
       type,
-      settings: getSettings()
+      settings: getSettings(),
+      ...extra
     });
   } catch (error) {
     await injectContentScript(tabId);
     return chrome.tabs.sendMessage(tabId, {
       type,
-      settings: getSettings()
+      settings: getSettings(),
+      ...extra
     });
   }
 }

@@ -14,6 +14,7 @@ Use this checklist before publishing Academic Evidence Highlighter.
   - A saved PDF with **Scan saved PDF**
 - Test a history/autocomplete search selection without pressing Enter and confirm the research fields update after the selected query settles.
 - Test a long or infinite-scroll page, confirming newly loaded content is scanned and earlier results return after switching tabs and back without reloading the page.
+- Confirm Facebook and YouTube do not auto-scan in **Scholarly pages only** mode; in **Any page** mode, YouTube search-title matches are labeled as titles and not evidence.
 - Confirm no old search-result preview badges appear on Scholar results.
 - Confirm **Clear all** clears fields, results, and page highlights.
 - Confirm CSV export works.

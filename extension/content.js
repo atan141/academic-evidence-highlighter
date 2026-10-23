@@ -66,6 +66,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message?.type === "EEH_SCAN") {
+    if (message.automatic && message.expectedUrl && location.href !== message.expectedUrl) {
+      sendResponse({ ok: false, skipped: true, title: document.title, url: location.href });
+      return true;
+    }
     const scan = scanPage(message.settings || {});
     sendResponse({
       ok: true,
@@ -151,12 +155,15 @@ function scanPage(settings) {
 
   blocks.forEach((block, blockIndex) => {
     const text = normalizeSpaces(block.innerText || "");
-    if (!text || text.length < 35) return;
+    if (!text || (block.isVideoTitle ? text.length < 4 : text.length < 35)) return;
     const context = getTargetContext(settings, text);
     const isReference = isReferenceBlock(block, text);
 
-    splitSentences(text).forEach((sentence) => {
-      const scored = scoreSentence(sentence, conceptTerms, allTerms, intent, context);
+    const sentences = block.isVideoTitle ? [text] : splitSentences(text);
+    sentences.forEach((sentence) => {
+      const scored = block.isVideoTitle
+        ? scoreVideoTitle(sentence, allTerms, intent)
+        : scoreSentence(sentence, conceptTerms, allTerms, intent, context);
       if (scored.score < intent.threshold) return;
       const answerTerms = extractAnswerTerms(sentence, intent);
 
@@ -165,15 +172,18 @@ function scanPage(settings) {
         id,
         sentence,
         answerTerms,
-        summary: summarizeSentence(sentence, settings, intent),
+        summary: block.isVideoTitle
+          ? "This YouTube video title matches your search terms. A title is not evidence; scan the description or transcript for study findings."
+          : summarizeSentence(sentence, settings, intent),
         concepts: conceptLabel(settings, scored.matches),
-        evidenceType: isReference ? "reference" : inferEvidenceType(sentence),
-        confidence: isReference ? "reference" : confidenceFromScore(scored.score, intent, scored.directness),
+        evidenceType: block.isVideoTitle ? "video title (not evidence)" : (isReference ? "reference" : inferEvidenceType(sentence)),
+        confidence: block.isVideoTitle ? "low" : (isReference ? "reference" : confidenceFromScore(scored.score, intent, scored.directness)),
         score: scored.score,
         order: candidates.length,
         matchedTerms: scored.matches,
         pageTitle: document.title,
-        url: location.href
+        url: location.href,
+        ...(block.isVideoTitle ? { sourceType: "video_title" } : {})
       });
     });
   });
@@ -181,8 +191,9 @@ function scanPage(settings) {
   const deduped = dedupeCandidates(candidates).slice(0, 80);
   deduped.forEach((candidate) => {
     const block = blocks.find((item) => normalizeSpaces(item.innerText || "").includes(candidate.sentence));
-    candidate.canHighlight = Boolean(block && !block.isTextFallback);
-    if (candidate.canHighlight) highlightSentence(block, candidate);
+    const element = block?.element || block;
+    candidate.canHighlight = Boolean(element && !block?.isTextFallback);
+    if (candidate.canHighlight) highlightSentence(element, candidate);
     const key = normalizeSpaces(candidate.sentence).toLowerCase();
     accumulatedResults.set(key, candidate);
   });
@@ -238,7 +249,8 @@ function getReadableBlocks() {
     (total, block) => total + normalizeSpaces(block.innerText || "").length,
     0
   );
-  if (articleBlocks.length && articleTextLength >= 500) return articleBlocks;
+  const videoTitleBlocks = getYouTubeVideoTitleBlocks();
+  if (articleBlocks.length && articleTextLength >= 500) return [...videoTitleBlocks, ...articleBlocks];
 
   // Modern social and single-page apps often put visible copy in generic
   // containers rather than paragraphs. Use their explicit text containers
@@ -266,7 +278,7 @@ function getReadableBlocks() {
     const ownText = normalizeSpaces(el.innerText || "");
     return !childText || childText.length < ownText.length * 0.75;
   });
-  if (appBlocks.length) return [...articleBlocks, ...appBlocks];
+  if (appBlocks.length) return [...videoTitleBlocks, ...articleBlocks, ...appBlocks];
 
   // Last resort for accessible pages built without semantic text blocks.
   // The side panel still controls when these blocks are scanned. These text
@@ -289,11 +301,31 @@ function getReadableBlocks() {
   if (current.length >= 20) textBlocks.push(current);
   if (textBlocks.length) {
     return [
+      ...videoTitleBlocks,
       ...articleBlocks,
-      ...textBlocks.map((innerText) => ({ innerText, isTextFallback: true }))
+      ...textBlocks.map((innerText) => ({ innerText, isTextFallback: true })),
     ];
   }
-  return articleBlocks;
+  return [...videoTitleBlocks, ...articleBlocks];
+}
+
+function getYouTubeVideoTitleBlocks() {
+  if (!/(^|\.)youtube\.com$/i.test(location.hostname) || !location.pathname.startsWith("/results")) return [];
+  const selector = [
+    "ytd-video-renderer #video-title",
+    "ytd-rich-grid-media #video-title",
+    "ytd-compact-video-renderer #video-title",
+    "yt-lockup-view-model #video-title",
+    "a#video-title",
+    "a#video-title-link",
+    "a.yt-lockup-metadata-view-model__title"
+  ].join(",");
+  const seen = new Set();
+  return [...document.querySelectorAll(selector)]
+    .filter((element) => !seen.has(element) && seen.add(element))
+    .filter((element) => isVisible(element))
+    .map((element) => ({ element, innerText: normalizeSpaces(element.innerText || element.textContent || ""), isVideoTitle: true }))
+    .filter((block) => block.innerText.length >= 4 && block.innerText.length <= 300);
 }
 
 function scoreSentence(sentence, conceptTerms, allTerms, intent = inferIntent({}), context = {}) {
@@ -357,6 +389,11 @@ function scoreSentence(sentence, conceptTerms, allTerms, intent = inferIntent({}
   }
 
   return { score, matches: [...new Set(matches)].slice(0, 10), directness: "general" };
+}
+
+function scoreVideoTitle(title, allTerms, intent) {
+  const matches = allTerms.filter((term) => includesTerm(title.toLowerCase(), term));
+  return { score: matches.length ? intent.threshold : 0, matches, directness: "title" };
 }
 
 function splitSentences(text) {
@@ -713,7 +750,8 @@ function findElementContainingSentence(sentence) {
   const target = normalizeSpaces(sentence);
   if (!target) return null;
   const blocks = getReadableBlocks();
-  return blocks.find((block) => normalizeSpaces(block.innerText || "").includes(target)) || null;
+  const block = blocks.find((item) => normalizeSpaces(item.innerText || "").includes(target));
+  return block?.element || block || null;
 }
 
 function emphasizeAnswerTerms(container, terms) {
