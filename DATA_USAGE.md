@@ -20,6 +20,8 @@ The extension uses the following data only for the user-facing evidence-highligh
 - Accessible PDF text
 - PDF files manually selected by the user
 - User-entered research question, concepts, and extra terms
+- Scroll events from the active page, used to request scans of newly loaded content when automatic scanning is enabled
+- Search input values and URL query terms on the active page, used locally to update the research fields after a search changes
 - User interface preferences such as sort and filter choices
 - Generated candidate evidence cards and CSV export content
 
@@ -37,12 +39,13 @@ Stored with Chrome storage:
 - Pause state
 - One-time version notice dismissal state
 
-Stored only in the current side panel session unless exported by the user:
+Kept only in extension memory while the page remains open unless exported by the user:
 
 - Candidate evidence results
 - Extracted answer terms
 - Short generated summaries
 - Page/PDF result metadata
+- Accumulated candidate results for the active page and current research settings, kept in memory while the page remains open
 
 ## Data the Extension Does Not Collect
 
@@ -70,11 +73,11 @@ This version has no backend server, no analytics, no advertising SDK, and no ext
 
 ### `activeTab`
 
-Used to scan the current tab only when the user opens the extension or starts scanning.
+Used to scan the active tab when an eligible automatic-scan mode is enabled, including after active-page scrolling, or when the user starts a scan.
 
 ### `scripting`
 
-Used to check active-page citation metadata in scholarly-only mode and to inject or re-inject the content script into the active page when a page is eligible for scanning or the user explicitly starts a scan.
+Used to make the content script available on pages covered by the host permission, check active-page citation metadata in scholarly-only mode, and inject or re-inject the script when needed. The script can report scroll activity and search query values; page text is read only when automatic scanning settings allow it or the user explicitly starts a scan.
 
 ### `storage`
 
@@ -86,7 +89,7 @@ Used to show the Evidence Finder interface in Chrome's side panel.
 
 ### `<all_urls>` host permission
 
-Used because academic research pages and PDFs can appear on many different publisher, university, database, and search-result domains. The extension needs page access to read the current page/PDF for the evidence-highlighting feature. It does not use this access for advertising, tracking, or selling data.
+Used because research materials and other user-selected webpages can appear on many domains. The extension needs page access to read the active page when it is eligible for scanning. Its content script does not scan pages merely because they are open; the side panel's scan mode, pause setting, and user actions control when page text is read. It does not use this access for advertising, tracking, or selling data.
 
 ## Chrome Web Store Privacy Form Suggested Answers
 

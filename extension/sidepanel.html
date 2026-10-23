@@ -36,6 +36,7 @@
         <label>
           Research question
           <textarea id="question" rows="3" placeholder="How is forest cover related to tick abundance?"></textarea>
+          <span class="fieldHint">Page searches update these fields when the site exposes the selected query. If they don’t, paste it here and click Scan page.</span>
         </label>
         <label>
           Concept 1
@@ -57,7 +58,9 @@
         <input id="pdfFileInput" class="hiddenInput" type="file" accept="application/pdf,.pdf">
       </section>
 
-      <section class="status" id="status">Open Scholar, an abstract page, or an article HTML page. The extension will try to fill this from your search.</section>
+      <section class="status" id="status">Search any page or enter a research question. Scrolling can load and scan more page content when automatic scanning is enabled.</section>
+
+      <section class="sessionHint">Results stay in memory for each open tab and return when you switch back. Feeds load content gradually; scroll at a pace that lets each section be scanned. Reloading, closing the tab, or navigating to another page clears that page’s memory. Export CSV if you need to keep a copy. Nothing is saved to a results database.</section>
 
       <section class="summary">
         <strong id="count">0</strong>

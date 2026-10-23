@@ -4,6 +4,11 @@ if (globalThis.__EEH_CONTENT_LOADED__) {
 }
 globalThis.__EEH_CONTENT_LOADED__ = true;
 
+let scrollIdleTimer = 0;
+let lastScrollSignalAt = 0;
+let accumulatedSettingsKey = "";
+const accumulatedResults = new Map();
+
 const RELATION_TERMS = [
   "related",
   "relationship",
@@ -78,7 +83,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message?.type === "EEH_CLEAR") {
     clearHighlights();
+    accumulatedSettingsKey = "";
+    accumulatedResults.clear();
     sendResponse({ ok: true });
+    return true;
+  }
+
+  if (message?.type === "EEH_GET_CACHED_RESULTS") {
+    const settingsKey = JSON.stringify({ url: location.href, settings: message.settings || {} });
+    sendResponse({
+      ok: true,
+      results: settingsKey === accumulatedSettingsKey ? [...accumulatedResults.values()] : [],
+      title: document.title,
+      url: location.href,
+      isPdfLike: location.href.toLowerCase().includes(".pdf")
+    });
     return true;
   }
 
@@ -89,8 +108,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+window.addEventListener("scroll", (event) => {
+  if (!event.isTrusted) return;
+  const reportScroll = () => {
+    lastScrollSignalAt = Date.now();
+    try {
+      chrome.runtime.sendMessage({ type: "EEH_SCROLL_ACTIVITY" }).catch(() => {});
+    } catch {
+      // The extension may be reloading while this page is open.
+    }
+  };
+  if (Date.now() - lastScrollSignalAt >= 1500) reportScroll();
+  window.clearTimeout(scrollIdleTimer);
+  scrollIdleTimer = window.setTimeout(() => {
+    if (Date.now() - lastScrollSignalAt >= 1000) reportScroll();
+  }, 1300);
+}, { capture: true, passive: true });
+
 function scanPage(settings) {
   clearHighlights();
+
+  const settingsKey = JSON.stringify({ url: location.href, settings });
+  if (settingsKey !== accumulatedSettingsKey) {
+    accumulatedSettingsKey = settingsKey;
+    accumulatedResults.clear();
+  }
+  accumulatedResults.forEach((result) => { result.canHighlight = false; });
 
   const intent = inferIntent(settings);
   const conceptTerms = normalizeTerms([
@@ -117,7 +160,7 @@ function scanPage(settings) {
       if (scored.score < intent.threshold) return;
       const answerTerms = extractAnswerTerms(sentence, intent);
 
-      const id = `eeh-${blockIndex}-${candidates.length}`;
+      const id = `eeh-${Date.now()}-${blockIndex}-${candidates.length}-${Math.random().toString(36).slice(2, 7)}`;
       candidates.push({
         id,
         sentence,
@@ -140,7 +183,13 @@ function scanPage(settings) {
     const block = blocks.find((item) => normalizeSpaces(item.innerText || "").includes(candidate.sentence));
     candidate.canHighlight = Boolean(block && !block.isTextFallback);
     if (candidate.canHighlight) highlightSentence(block, candidate);
+    const key = normalizeSpaces(candidate.sentence).toLowerCase();
+    accumulatedResults.set(key, candidate);
   });
+
+  while (accumulatedResults.size > 1000) {
+    accumulatedResults.delete(accumulatedResults.keys().next().value);
+  }
 
   return { results: deduped, pageTextLength, pageBodyTextLength, pageBlockCount: blocks.length };
 }
@@ -782,7 +831,13 @@ function suggestSettingsFromPage() {
 }
 
 function getSearchQuery() {
-  const searchInput = document.querySelector("input[name='q'], input[type='search'], textarea[name='q']");
+  const searchInputs = [
+    ...document.querySelectorAll(
+      "input[name='q'], input[type='search'], textarea[name='q'], input[role='combobox'], [role='combobox'] input, input[aria-label*='search' i], input[placeholder*='search' i]"
+    )
+  ];
+  const activeSearchInput = searchInputs.find((input) => input === document.activeElement && isVisible(input) && input.value?.trim());
+  const searchInput = activeSearchInput || searchInputs.find((input) => isVisible(input) && input.value?.trim());
   const inputValue = searchInput?.value?.trim();
   if (inputValue) return { query: inputValue, source: "search_input" };
 

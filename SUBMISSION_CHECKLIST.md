@@ -12,6 +12,8 @@ Use this checklist before publishing Academic Evidence Highlighter.
   - An article HTML page
   - An accessible PDF URL
   - A saved PDF with **Scan saved PDF**
+- Test a history/autocomplete search selection without pressing Enter and confirm the research fields update after the selected query settles.
+- Test a long or infinite-scroll page, confirming newly loaded content is scanned and earlier results return after switching tabs and back without reloading the page.
 - Confirm no old search-result preview badges appear on Scholar results.
 - Confirm **Clear all** clears fields, results, and page highlights.
 - Confirm CSV export works.
@@ -44,7 +46,7 @@ This version runs locally in the browser. It does not send paper text, PDF text,
 
 ## Suggested Permission Explanation
 
-Academic Evidence Highlighter needs access to check citation metadata locally on the active page in scholarly-only mode, scan pages recognized as scholarly or selected by the user's automatic scanning mode, or scan when the user explicitly clicks Scan page. It uses storage to remember the user's search settings, scan mode, pause state, and sidebar preferences. It does not sell data, serve ads, or transmit paper text to a developer server.
+Academic Evidence Highlighter needs access to check citation metadata locally on the active page in scholarly-only mode, scan pages recognized as scholarly or selected by the user's automatic scanning mode, rescan newly loaded active-page content while scrolling, and scan when the user explicitly clicks Scan page. Search fields and result caches are kept locally in memory for the open page; settings are stored in Chrome storage. It does not sell data, serve ads, or transmit paper text to a developer server.
 
 ## Suggested Category
 

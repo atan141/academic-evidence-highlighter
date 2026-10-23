@@ -2,7 +2,7 @@
 
 A Chrome extension prototype for finding candidate evidence while reading research pages.
 
-Version 0.17.5 scans scholarly search results, visible article text, modern web-app text, and accessible PDFs; highlights likely evidence sentences when the page layout supports it; creates review cards; and exports a CSV. Automatic scanning defaults to scholarly pages only, and you can pause it at any time without clearing your research question. Scholarly-only mode recognizes common journal publishers and checks citation metadata locally on other active pages before deciding whether to scan. When a page is skipped or cannot be read, the side panel explains why and offers next steps. For Any page mode, it can use visible page text as a fallback when a website has no recognizable text blocks. When matches are hidden by the result filter, it explains that and offers to show them. It is intentionally conservative: every item is labeled as candidate evidence for human verification.
+Version 0.17.6 scans scholarly search results, visible article text, modern web-app text, and accessible PDFs; highlights likely evidence sentences when the page layout supports it; creates review cards; and exports a CSV. Automatic scanning defaults to scholarly pages only, and you can pause it at any time without clearing your research question or current results. Scholarly-only mode recognizes common journal publishers and checks citation metadata locally on other active pages before deciding whether to scan. When a page is skipped or cannot be read, the side panel explains why and offers next steps. Search questions and concepts update when the active page exposes a changed search query, including searches selected from history. In dynamic feeds, the extension rescans as the user scrolls and accumulates results in page memory; switching tabs does not clear them. Reloading, closing the tab, or navigating away ends that page's in-memory session. No result database or cloud storage is used.
 
 ## Load It In Chrome
 
@@ -11,7 +11,7 @@ Version 0.17.5 scans scholarly search results, visible article text, modern web-
 3. Click **Load unpacked**.
 4. Choose this folder:
 
-   `versions/0.17.5`
+   `versions/0.17.6/extension`
 
 5. Open Google Scholar, another scholarly search page, an article abstract page, or an HTML full-text article.
 6. Click the extension icon. On scholarly pages, it can fill the question/concepts from the search and scan automatically. Use **Pause scanning** to stop automatic scans while keeping your question. While paused, **Scan this page once** scans only the current page.
@@ -19,7 +19,9 @@ Version 0.17.5 scans scholarly search results, visible article text, modern web-
 ## What Works Now
 
 - Tries to fill the research question and concepts from the current search page.
-- Updates the research question/concepts when the active Google Scholar search query changes.
+- Updates the research question/concepts when the active page search query changes.
+- Watches scrolling on the active page, scans newly loaded content, and accumulates unique results in memory for that page and question. On fast-moving feeds, scroll at a pace that lets each loaded section be scanned; content that was never loaded cannot be scanned.
+- Restores an open page's in-memory results when returning to its tab; pausing scanning keeps current results and highlights.
 - Parses one-word and multi-word organism searches like `seagull food diet`, `black phoebe food diet`, and `what does seagull eat`.
 - Adds guide mode for broad searches like `hamster care guide`, prioritizing practical care recommendations about housing, feeding, bedding, handling, hygiene, health, and veterinary care.
 - Guards the page script against duplicate injection when Chrome already loaded it.

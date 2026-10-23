@@ -26,12 +26,22 @@ const FIELD_KEYS = Object.keys(fields);
 const UI_PREF_KEYS = ["sortMode", "confidenceFilter"];
 
 let currentResults = [];
+let currentResultContextKey = "";
 let pageInfo = {};
 let pdfjsLibPromise = null;
 let lastAutoQuestion = "";
 let refreshTimer = null;
 let lastActiveUrl = "";
+let lastActiveTabId = null;
+let activePageGeneration = 0;
 let autoScanInFlight = false;
+let scanInProgress = false;
+let pendingPageSuggestion = "";
+let pendingPageSuggestionAt = 0;
+let lastScrollScanAt = 0;
+let scrollScanQueued = false;
+let queuedScrollTabId = null;
+let searchCheckInFlight = false;
 let eehPaused = false;
 let storedScanMode = "scholarly";
 
@@ -66,6 +76,9 @@ async function init() {
   sortMode.addEventListener("change", saveUiPreferencesAndRender);
   confidenceFilter.addEventListener("change", saveUiPreferencesAndRender);
   chrome.storage.onChanged.addListener(handleStorageChange);
+  chrome.runtime.onMessage.addListener((message, sender) => {
+    if (message?.type === "EEH_SCROLL_ACTIVITY") handleContentScroll(sender);
+  });
   updatePauseUi();
   const initialTab = await getActiveTab();
   if (initialTab?.url) await handleActivePageChanged(initialTab);
@@ -92,14 +105,68 @@ function getSettings() {
 
 function startSearchWatcher() {
   if (refreshTimer) window.clearInterval(refreshTimer);
-  refreshTimer = window.setInterval(() => {
-    if (eehPaused || !isAutomaticScanningAllowed(storedScanMode)) return;
-    getActiveTab().then((tab) => {
-      if (tab?.url && looksScholarly(tab.url)) {
-        prefillFromPage({ forceScan: false, silent: true, clearResultsOnChange: true });
+  refreshTimer = window.setInterval(async () => {
+    if (searchCheckInFlight) return;
+    searchCheckInFlight = true;
+    try {
+      const tab = await getActiveTab();
+      if (!tab?.id || isUnsupportedUrl(tab.url || "")) return;
+      const response = await sendPageMessage(tab.id, "EEH_SUGGEST");
+      const stillActive = await getActiveTab();
+      if (stillActive?.id !== tab.id) return;
+      const suggestion = response.suggestion || {};
+      const query = suggestion.question?.trim() || "";
+      if (!query || !["search_input", "url_query"].includes(suggestion.source) || query === lastAutoQuestion) {
+        pendingPageSuggestion = "";
+        return;
       }
-    }).catch(() => {});
-  }, 2000);
+      if (query !== pendingPageSuggestion) {
+        pendingPageSuggestion = query;
+        pendingPageSuggestionAt = Date.now();
+        return;
+      }
+      if (Date.now() - pendingPageSuggestionAt < 900) return;
+
+      pendingPageSuggestion = "";
+      const changed = await prefillFromPage({ forceScan: false, silent: true, clearResultsOnChange: true });
+      const activeAfterPrefill = await getActiveTab();
+      if (activeAfterPrefill?.id !== tab.id) return;
+      lastAutoQuestion = query;
+      if (changed && !eehPaused && isAutomaticScanningAllowed(storedScanMode)) {
+        await autoScanCurrentTab();
+      } else if (changed) {
+        clearEmptyState();
+        setStatus(eehPaused
+          ? "Updated the research question from this page’s search. Automatic scanning is paused; click Scan this page once to scan."
+          : "Updated the research question from this page’s search. Click Scan page when you’re ready.");
+      }
+    } catch {
+      // Ignore tabs which do not expose a page to extension scripts.
+    } finally {
+      searchCheckInFlight = false;
+    }
+  }, 800);
+}
+
+async function handleContentScroll(sender) {
+  if (!sender.tab?.id || eehPaused || !isAutomaticScanningAllowed(storedScanMode)) return;
+  try {
+    const activeTab = await getActiveTab();
+    if (!activeTab?.id || activeTab.id !== sender.tab.id) return;
+    if (storedScanMode === "scholarly" && !await isAutomaticPage(activeTab, storedScanMode)) return;
+    if (isUnsupportedUrl(activeTab.url || "") || looksLikeLocalPdfUrl(activeTab.url || "")) return;
+    if (autoScanInFlight || scanInProgress) {
+      scrollScanQueued = true;
+      queuedScrollTabId = sender.tab.id;
+      return;
+    }
+    if (Date.now() - lastScrollScanAt < 1000) return;
+    lastScrollScanAt = Date.now();
+    setStatus("Scanning the loaded page content. Keep scrolling to load more; results from earlier content stay here.");
+    await autoScanCurrentTab();
+  } catch {
+    // Ignore transient tab changes while scrolling.
+  }
 }
 
 function startTabWatcher() {
@@ -107,8 +174,9 @@ function startTabWatcher() {
     try {
       const tab = await getActiveTab();
       const url = tab?.url || "";
-      if (!url || url === lastActiveUrl) return;
+      if (!url || (url === lastActiveUrl && tab.id === lastActiveTabId)) return;
       lastActiveUrl = url;
+      lastActiveTabId = tab.id;
       await handleActivePageChanged(tab);
     } catch {
       // Ignore transient tab states while Chrome is navigating.
@@ -119,11 +187,32 @@ function startTabWatcher() {
 async function rememberActiveUrl() {
   const tab = await getActiveTab();
   lastActiveUrl = tab?.url || "";
+  lastActiveTabId = tab?.id || null;
 }
 
 async function handleActivePageChanged(tab) {
+  const generation = ++activePageGeneration;
   currentResults = [];
+  currentResultContextKey = "";
   renderResults();
+  if (tab?.id && !isUnsupportedUrl(tab.url || "") && !looksLikeLocalPdfUrl(tab.url || "")) {
+    await prefillFromPage({ forceScan: false, silent: true });
+    if (generation !== activePageGeneration) return;
+  }
+  if (tab?.id && !isUnsupportedUrl(tab.url || "") && !looksLikeLocalPdfUrl(tab.url || "")) {
+    try {
+      const cached = await sendPageMessage(tab.id, "EEH_GET_CACHED_RESULTS");
+      if (generation !== activePageGeneration) return;
+      if (cached?.results?.length) {
+        currentResults = cached.results;
+        currentResultContextKey = JSON.stringify({ tabId: tab.id, url: tab.url, settings: getSettings() });
+        pageInfo = { title: cached.title, url: cached.url, isPdfLike: cached.isPdfLike };
+        renderResults();
+      }
+    } catch {
+      // The page may not allow content-script access.
+    }
+  }
   if (eehPaused || !isAutomaticScanningAllowed(storedScanMode)) {
     setEmptyState(
       eehPaused ? "Automatic scanning is paused" : "Automatic scanning is set to manual",
@@ -133,7 +222,9 @@ async function handleActivePageChanged(tab) {
     setStatus(eehPaused ? "Scanning is paused. Your research question is saved." : "Automatic scanning is off for this page. Click Scan page to scan it once.");
     return;
   }
-  if (!await isAutomaticPage(tab, storedScanMode)) {
+  const autoEligible = await isAutomaticPage(tab, storedScanMode);
+  if (generation !== activePageGeneration) return;
+  if (!autoEligible) {
     setEmptyState(
       "This page wasn’t recognized as scholarly",
       "Scholarly pages only is on, so automatic scanning skipped this page. The page may still be an article that our checks didn’t recognize. Try Scan page once, or switch Automatic scanning to Any page.",
@@ -159,13 +250,28 @@ async function handleActivePageChanged(tab) {
     return;
   }
   setStatus("New page detected. Auto-scanning with the current research question...");
-  await clearPageHighlightsOnly();
-  await prefillFromPage({ forceScan: false, silent: true });
   await autoScanCurrentTab();
 }
 
 async function autoScanCurrentTab() {
   if (eehPaused || !isAutomaticScanningAllowed(storedScanMode) || autoScanInFlight) return;
+  const activeTab = await getActiveTab();
+  if (!activeTab?.id) return;
+  const autoEligible = await isAutomaticPage(activeTab, storedScanMode);
+  const stillActive = await getActiveTab();
+  if (stillActive?.id !== activeTab.id) return;
+  if (!autoEligible) {
+    setEmptyState(
+      "This page wasn’t recognized as scholarly",
+      "Scholarly pages only is on, so automatic scanning skipped this page. The page may still be an article that our checks didn’t recognize. Try Scan page once, or switch Automatic scanning to Any page.",
+      [
+        { label: "Scan this page once", action: () => scanCurrentTab() },
+        { label: "Use Any page", action: () => { scanMode.value = "all"; saveScanMode(); } }
+      ]
+    );
+    setStatus("Automatic scan skipped: this page did not match the scholarly-page checks.");
+    return;
+  }
   const settings = getSettings();
   if (!settings.question && !settings.conceptOne && !settings.conceptTwo && !settings.extraTerms) {
     setStatus("New page detected. Enter a research question or search Scholar to start scanning.");
@@ -177,6 +283,12 @@ async function autoScanCurrentTab() {
     await scanCurrentTab({ auto: true });
   } finally {
     autoScanInFlight = false;
+    if (scrollScanQueued && queuedScrollTabId) {
+      const tabId = queuedScrollTabId;
+      scrollScanQueued = false;
+      queuedScrollTabId = null;
+      window.setTimeout(() => handleContentScroll({ tab: { id: tabId } }), 150);
+    }
   }
 }
 
@@ -193,6 +305,7 @@ async function scanCurrentTab(options = {}) {
   clearEmptyState();
   setStatus(auto ? "Auto-scanning this page..." : "Scanning visible article text...");
   scanButton.disabled = true;
+  scanInProgress = true;
 
   try {
     const tab = await getActiveTab();
@@ -216,8 +329,15 @@ async function scanCurrentTab(options = {}) {
       await clearPageHighlightsOnly();
       return;
     }
+    const stillActive = await getActiveTab();
+    if (stillActive?.id !== tab.id) return;
 
-    currentResults = response.results || [];
+    const resultContextKey = JSON.stringify({ tabId: tab.id, url: tab.url, settings: getSettings() });
+    if (resultContextKey !== currentResultContextKey) {
+      currentResults = [];
+      currentResultContextKey = resultContextKey;
+    }
+    currentResults = mergeCandidateResults(currentResults, response.results || []);
     pageInfo = { title: response.title, url: response.url, isPdfLike: response.isPdfLike };
     renderResults();
 
@@ -226,7 +346,7 @@ async function scanCurrentTab(options = {}) {
         ? "Scanned PDF text. Built-in PDF viewers cannot be highlighted yet, so review the evidence cards here."
         : "Could not extract useful PDF text. Some journal PDFs are protected, image-only, or compressed beyond this prototype.");
     } else if (currentResults.length) {
-      setStatus("Review the highlighted sentences. Treat every item as candidate evidence until you verify it.");
+      setStatus(`Scanned the content loaded so far and found ${currentResults.length} candidate sentence${currentResults.length === 1 ? "" : "s"}. On feeds, keep scrolling to load and scan more; earlier results stay here. Verify each candidate.`);
     } else if ((response.pageTextLength || 0) < 50) {
       const bodyTextLength = response.pageBodyTextLength || 0;
       const hasVisiblePageText = bodyTextLength >= 50;
@@ -238,7 +358,7 @@ async function scanCurrentTab(options = {}) {
       ]);
       setStatus(message);
     } else {
-      const message = "The page text was readable, but no sentences matched your current question and concepts. Try broader terms or open the article’s full-text page.";
+      const message = "The text loaded so far was readable, but no sentences matched your current question and concepts. On feeds or pages that load content as you scroll, keep scrolling to load more; the extension will scan new content and keep earlier results. You can also try broader terms.";
       setEmptyState("No matching candidate sentences", message);
       setStatus(message);
     }
@@ -256,8 +376,15 @@ async function scanCurrentTab(options = {}) {
       setStatus(`Could not scan this tab: ${error.message}`);
     }
   } finally {
+    scanInProgress = false;
     scanButton.disabled = false;
     if (eehPaused && !auto) setStatus("Scanned this page once. Automatic scanning is still paused.");
+    if (!autoScanInFlight && scrollScanQueued && queuedScrollTabId) {
+      const tabId = queuedScrollTabId;
+      scrollScanQueued = false;
+      queuedScrollTabId = null;
+      window.setTimeout(() => handleContentScroll({ tab: { id: tabId } }), 150);
+    }
   }
 }
 
@@ -266,16 +393,14 @@ async function togglePause() {
   await chrome.storage.sync.set({ eehPaused });
   updatePauseUi();
   if (eehPaused) {
-    await clearPageHighlightsOnly();
-    currentResults = [];
-    renderResults();
-    setStatus("Scanning paused. Your research question and concepts are saved.");
+    setStatus("Scanning paused. Current results and page highlights are kept in memory.");
   } else {
     lastActiveUrl = "";
     setStatus("Scanning resumed.");
     const tab = await getActiveTab();
     if (tab?.url) {
       lastActiveUrl = tab.url;
+      lastActiveTabId = tab.id;
       await handleActivePageChanged(tab);
     }
   }
@@ -297,6 +422,7 @@ async function saveScanMode() {
   const tab = await getActiveTab();
   if (tab?.url) {
     lastActiveUrl = tab.url;
+    lastActiveTabId = tab.id;
     await handleActivePageChanged(tab);
   }
 }
@@ -315,10 +441,7 @@ function handleStorageChange(changes, areaName) {
     eehPaused = Boolean(changes.eehPaused.newValue);
     updatePauseUi();
     if (eehPaused) {
-      clearPageHighlightsOnly();
-      currentResults = [];
-      renderResults();
-      setStatus("Scanning paused. Your research question and concepts are saved.");
+      setStatus("Scanning paused. Current results and page highlights are kept in memory.");
     }
   }
   if (changes.scanMode && ["scholarly", "all", "manual"].includes(changes.scanMode.newValue)) {
@@ -435,10 +558,28 @@ async function clearAll() {
     input.value = "";
   });
   await chrome.storage.sync.remove(FIELD_KEYS);
-  lastAutoQuestion = "";
   currentResults = [];
+  currentResultContextKey = "";
   renderResults();
   setStatus("Cleared search fields, results, and page highlights.");
+}
+
+function mergeCandidateResults(existing, incoming) {
+  const merged = new Map();
+  const keyFor = (result) => `${result.pageNumber || ""}|${(result.sentence || "").replace(/\s+/g, " ").trim().toLowerCase()}`;
+  const incomingKeys = new Set(incoming.map(keyFor));
+  existing.forEach((result, index) => {
+    const key = keyFor(result);
+    merged.set(key, { ...result, canHighlight: incomingKeys.has(key) ? result.canHighlight : false, order: index });
+  });
+  incoming.forEach((result) => {
+    const key = keyFor(result);
+    const previous = merged.get(key);
+    merged.set(key, previous
+      ? { ...previous, ...result, order: previous.order }
+      : { ...result, order: merged.size });
+  });
+  return [...merged.values()];
 }
 
 function renderResults() {
@@ -666,21 +807,28 @@ async function prefillFromPage(options = {}) {
   const { forceScan = true, silent = false, clearResultsOnChange = false } = options;
   try {
     const tab = await getActiveTab();
-    if (!tab?.id) return;
+    if (!tab?.id) return false;
 
     const response = await sendPageMessage(tab.id, "EEH_SUGGEST");
+    const stillActive = await getActiveTab();
+    if (stillActive?.id !== tab.id) return false;
     const suggestion = response.suggestion || {};
     let changed = false;
 
     const canUsePageSuggestion = ["search_input", "url_query"].includes(suggestion.source);
     const currentQuestion = fields.question.value.trim();
-    const isNewScholarSearch = canUsePageSuggestion && suggestion.question && currentQuestion !== suggestion.question;
-    const shouldUsePageSuggestion = isNewScholarSearch;
+    const isNewPageSearch = canUsePageSuggestion
+      && suggestion.question
+      && suggestion.question !== lastAutoQuestion
+      && currentQuestion !== suggestion.question;
 
     Object.entries(fields).forEach(([key, input]) => {
-      if (shouldUsePageSuggestion && suggestion[key]) {
-        input.value = suggestion[key];
-        changed = true;
+      if (isNewPageSearch) {
+        const nextValue = suggestion[key] || "";
+        if (input.value.trim() !== nextValue) {
+          input.value = nextValue;
+          changed = true;
+        }
       } else if (canUsePageSuggestion && !input.value.trim() && suggestion[key]) {
         input.value = suggestion[key];
         changed = true;
@@ -693,9 +841,11 @@ async function prefillFromPage(options = {}) {
       if (clearResultsOnChange) {
         await clearPageHighlightsOnly();
         currentResults = [];
+        currentResultContextKey = "";
         renderResults();
+        clearEmptyState();
       }
-      if (!silent) setStatus("Updated from the current Scholar search. You can edit the fields, or scan now.");
+      if (!silent) setStatus("Updated the research question and concepts from this page’s search. You can edit them or scan now.");
       if (forceScan && suggestion.conceptOne && suggestion.conceptTwo) {
         await scanCurrentTab();
       }
@@ -704,8 +854,10 @@ async function prefillFromPage(options = {}) {
     } else if (!silent && response.pdfLinks?.length) {
       setStatus(`Found ${response.pdfLinks.length} PDF link(s). This prototype can detect them, but it cannot yet read protected PDF viewers directly.`);
     }
+    return changed;
   } catch {
-    if (!silent) setStatus("Open Scholar, an abstract page, or an article HTML page, then scan.");
+    if (!silent) setStatus("I couldn’t read a search query from this page. Enter a research question or click Scan page to scan with your saved terms.");
+    return false;
   }
 }
 
