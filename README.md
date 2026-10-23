@@ -2,7 +2,7 @@
 
 A Chrome extension prototype for finding candidate evidence while reading research pages.
 
-Version 0.17.7 scans scholarly search results, visible article text, modern web-app text, and accessible PDFs; highlights likely evidence sentences when the page layout supports it; creates review cards; and exports a CSV. Automatic scanning defaults to scholarly pages only, and you can pause it at any time without clearing your research question or current results. Scholarly-only mode recognizes common journal publishers and checks citation metadata locally on other active pages before deciding whether to scan; social and video platforms are excluded from automatic scholarly scanning. YouTube search results in Any page mode can show matching video titles as title matches clearly marked not evidence. When a page is skipped or cannot be read, the side panel explains why and offers next steps. Search questions and concepts update when the active page exposes a changed search query, including searches selected from history. In dynamic feeds, the extension rescans as the user scrolls and accumulates results in page memory; switching tabs does not clear them. Reloading, closing the tab, or navigating away ends that page's in-memory session. No result database or cloud storage is used.
+Version 0.17.8 scans scholarly search results, visible article text, modern web-app text, and accessible PDFs; highlights likely evidence sentences when the page layout supports it; creates review cards; and exports a CSV. Automatic scanning defaults to scholarly pages only, and you can pause it at any time without clearing your research question or current results. Scholarly-only mode checks the page address against known scholarly publishers and academic URL patterns before loading the page-reading script. Unrecognized pages are not read for scanning; the panel explains this and offers a one-time scan button. YouTube search results in Any page mode can show matching video titles as title matches clearly marked not evidence. When a page is skipped or cannot be read, the side panel explains why and offers next steps. Search questions and concepts update when the active page exposes a changed search query, including searches selected from history. In dynamic feeds, the extension rescans as the user scrolls and accumulates results in page memory; switching tabs does not clear them. Reloading, closing the tab, or navigating away ends that page's in-memory session. No result database or cloud storage is used.
 
 ## Load It In Chrome
 
@@ -11,7 +11,7 @@ Version 0.17.7 scans scholarly search results, visible article text, modern web-
 3. Click **Load unpacked**.
 4. Choose this folder:
 
-   `versions/0.17.7/extension`
+   `versions/0.17.8/extension`
 
 5. Open Google Scholar, another scholarly search page, an article abstract page, or an HTML full-text article.
 6. Click the extension icon. On scholarly pages, it can fill the question/concepts from the search and scan automatically. Use **Pause scanning** to stop automatic scans while keeping your question. While paused, **Scan this page once** scans only the current page.
@@ -39,11 +39,11 @@ Version 0.17.7 scans scholarly search results, visible article text, modern web-
 - Clicking a result card jumps to the matching highlight on the page when the result came from page text.
 - Auto-clears stale results and scans the newly active page when you switch to a different research paper tab.
 - Starts in **Scholarly pages only** automatic scanning mode. Change it to **Any page** or **Only when I click Scan** in the side panel.
-- Recognizes scholarly publishers, academic article URL patterns, and local citation metadata such as DOI, journal title, and author tags. Full page text is only scanned when the page is recognized in scholarly-only mode or you explicitly start a scan.
+- Recognizes scholarly publishers and academic URL patterns before loading the page-reading script. Unrecognized pages are not inspected in scholarly-only mode unless you explicitly choose **Scan this page once**.
 - Provides a visible **Pause scanning** control, a paused toolbar badge, and the `Alt+Shift+P` keyboard shortcut. Pausing removes current page highlights but keeps the saved research question and concepts.
 - Loads the page-reading script only when automatic scanning is allowed or you explicitly scan, rather than injecting it into every website on browser startup.
 - Distinguishes pages with no readable text from pages whose text simply has no candidates for the current research question.
-- Excludes known social/video platforms from Scholarly pages only automatic scanning. In Any page mode, YouTube search-title matches are labeled as titles and explicitly not evidence; descriptions and transcripts should be scanned for study findings.
+- In Scholarly pages only mode, checks the address before loading the page-reading script. Unrecognized pages are not read unless you choose **Scan this page once**. In Any page mode, YouTube search-title matches are labeled as titles and explicitly not evidence; descriptions and transcripts should be scanned for study findings.
 - Remembers sidebar sort/filter preferences, such as Highest compatibility, across tabs and reloads.
 - **Clear all** clears the search fields, results, and page highlights.
 - Creates sidebar cards with:

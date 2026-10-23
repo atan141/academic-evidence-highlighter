@@ -6,6 +6,7 @@ globalThis.__EEH_CONTENT_LOADED__ = true;
 
 let scrollIdleTimer = 0;
 let lastScrollSignalAt = 0;
+let pageReaderDisabled = false;
 let accumulatedSettingsKey = "";
 const accumulatedResults = new Map();
 
@@ -53,6 +54,11 @@ const EVIDENCE_PATTERNS = [
 ];
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.expectedUrl && location.href !== message.expectedUrl) {
+    sendResponse({ ok: false, skipped: true, title: document.title, url: location.href });
+    return true;
+  }
+
   if (message?.type === "EEH_SUGGEST") {
     sendResponse({
       ok: true,
@@ -65,11 +71,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === "EEH_DISABLE") {
+    pageReaderDisabled = true;
+    window.removeEventListener("scroll", handlePageScroll, true);
+    clearHighlights();
+    accumulatedSettingsKey = "";
+    accumulatedResults.clear();
+    sendResponse({ ok: true, disabled: true });
+    return true;
+  }
+
   if (message?.type === "EEH_SCAN") {
     if (message.automatic && message.expectedUrl && location.href !== message.expectedUrl) {
       sendResponse({ ok: false, skipped: true, title: document.title, url: location.href });
       return true;
     }
+    if (pageReaderDisabled && !message.automatic && !message.explicitScan) {
+      sendResponse({ ok: false, skipped: true, title: document.title, url: location.href });
+      return true;
+    }
+    pageReaderDisabled = !message.automatic && !message.allowScroll;
+    if (pageReaderDisabled) window.removeEventListener("scroll", handlePageScroll, true);
+    else window.addEventListener("scroll", handlePageScroll, { capture: true, passive: true });
     const scan = scanPage(message.settings || {});
     sendResponse({
       ok: true,
@@ -112,7 +135,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-window.addEventListener("scroll", (event) => {
+function handlePageScroll(event) {
+  if (pageReaderDisabled) return;
   if (!event.isTrusted) return;
   const reportScroll = () => {
     lastScrollSignalAt = Date.now();
@@ -127,7 +151,7 @@ window.addEventListener("scroll", (event) => {
   scrollIdleTimer = window.setTimeout(() => {
     if (Date.now() - lastScrollSignalAt >= 1000) reportScroll();
   }, 1300);
-}, { capture: true, passive: true });
+}
 
 function scanPage(settings) {
   clearHighlights();

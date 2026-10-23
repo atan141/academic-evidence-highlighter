@@ -15,7 +15,7 @@ Academic Evidence Highlighter helps users find and review candidate evidence in 
 The extension uses the following data only for the user-facing evidence-highlighting feature:
 
 - Active tab URL and title
-- Citation metadata and scholarly structured-data tags checked locally in scholarly-only mode
+- Active tab address checked locally against known scholarly publishers and academic URL patterns in scholarly-only mode
 - Visible page text from the active tab
 - Accessible PDF text
 - PDF files manually selected by the user
@@ -77,7 +77,7 @@ Used to scan the active tab when an eligible automatic-scan mode is enabled, inc
 
 ### `scripting`
 
-Used to make the content script available on pages covered by the host permission, check active-page citation metadata in scholarly-only mode, and inject or re-inject the script when needed. The script can report scroll activity and search query values; page text is read only when automatic scanning settings allow it or the user explicitly starts a scan.
+Used to inject the page-reading script only after a page is eligible for automatic scanning or when the user explicitly starts a scan. In scholarly-only mode, the extension checks the URL before injection and does not inspect page text or search fields on unrecognized pages.
 
 ### `storage`
 
@@ -89,7 +89,7 @@ Used to show the Evidence Finder interface in Chrome's side panel.
 
 ### `<all_urls>` host permission
 
-Used because research materials and other user-selected webpages can appear on many domains. The extension needs page access to read the active page when it is eligible for scanning. Its content script does not scan pages merely because they are open; the side panel's scan mode, pause setting, and user actions control when page text is read. It does not use this access for advertising, tracking, or selling data.
+Used to support research pages on many domains. The extension does not load its page-reading script on every page. In scholarly-only mode, it checks the active tab URL first and only injects on recognized scholarly addresses; on an unrecognized page it does not read page content unless the user explicitly chooses **Scan this page once**. It does not use this access for advertising, tracking, or selling data.
 
 ## Chrome Web Store Privacy Form Suggested Answers
 

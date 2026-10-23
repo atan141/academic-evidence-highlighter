@@ -123,10 +123,15 @@ function startSearchWatcher() {
     searchCheckInFlight = true;
     try {
       const tab = await getActiveTab();
-      if (!tab?.id || isUnsupportedUrl(tab.url || "")) return;
-      const response = await sendPageMessage(tab.id, "EEH_SUGGEST");
+      if (!tab?.id || eehPaused || !isAutomaticScanningAllowed(storedScanMode) || isUnsupportedUrl(tab.url || "")) return;
+      if (storedScanMode === "scholarly" && !await isAutomaticPage(tab, storedScanMode)) {
+        pendingPageSuggestion = "";
+        return;
+      }
+      const response = await sendPageMessage(tab.id, "EEH_SUGGEST", { expectedUrl: tab.url }, tab.url);
+      if (response?.skipped) return;
       const stillActive = await getActiveTab();
-      if (stillActive?.id !== tab.id) return;
+      if (stillActive?.id !== tab.id || stillActive?.url !== tab.url) return;
       const suggestion = response.suggestion || {};
       const query = suggestion.question?.trim() || "";
       if (!query || !["search_input", "url_query"].includes(suggestion.source) || query === lastAutoQuestion) {
@@ -141,9 +146,9 @@ function startSearchWatcher() {
       if (Date.now() - pendingPageSuggestionAt < 900) return;
 
       pendingPageSuggestion = "";
-      const changed = await prefillFromPage({ forceScan: false, silent: true, clearResultsOnChange: true });
+      const changed = await prefillFromPage({ forceScan: false, silent: true, clearResultsOnChange: true, expectedTab: tab });
       const activeAfterPrefill = await getActiveTab();
-      if (activeAfterPrefill?.id !== tab.id) return;
+      if (activeAfterPrefill?.id !== tab.id || activeAfterPrefill?.url !== tab.url) return;
       lastAutoQuestion = query;
       if (changed && !eehPaused && isAutomaticScanningAllowed(storedScanMode)) {
         await autoScanCurrentTab();
@@ -207,14 +212,48 @@ async function handleActivePageChanged(tab) {
   const generation = ++activePageGeneration;
   currentResults = [];
   currentResultContextKey = "";
+  pageInfo = { title: tab?.title || "", url: tab?.url || "", isPdfLike: looksLikePdfUrl(tab?.url || "") };
   renderResults();
-  if (tab?.id && !isUnsupportedUrl(tab.url || "") && !looksLikeLocalPdfUrl(tab.url || "")) {
-    await prefillFromPage({ forceScan: false, silent: true });
-    if (generation !== activePageGeneration) return;
+  if (!tab?.id) return;
+  if (eehPaused || !isAutomaticScanningAllowed(storedScanMode)) {
+    setEmptyState(
+      eehPaused ? "Automatic scanning is paused" : "Automatic scanning is set to manual",
+      eehPaused ? "This page has not been read for scanning. Your research question is saved." : "This page is not read unless you choose Scan page.",
+      [{ label: "Scan this page once", action: () => scanCurrentTab() }]
+    );
+    setStatus(eehPaused ? "Scanning is paused. Your research question is saved." : "Automatic scanning is off for this page. Click Scan page to scan it once.");
+    return;
   }
-  if (tab?.id && !isUnsupportedUrl(tab.url || "") && !looksLikeLocalPdfUrl(tab.url || "")) {
+  if (storedScanMode === "scholarly") {
+    const autoEligible = await isAutomaticPage(tab, storedScanMode);
+    if (generation !== activePageGeneration) return;
+    if (!autoEligible) {
+      currentResults = [];
+      currentResultContextKey = "";
+      pendingPageSuggestion = "";
+      renderResults();
+      // Clear any marks left by an earlier extension version without injecting
+      // a script or asking the page for content.
+      try {
+        await chrome.tabs.sendMessage(tab.id, { type: "EEH_DISABLE" });
+      } catch {
+        // No page reader is installed on this page; nothing needs clearing.
+      }
+      if (generation !== activePageGeneration) return;
+      showScholarlyPageSkipped();
+      return;
+    }
+  }
+
+  if (!isUnsupportedUrl(tab.url || "") && !looksLikeLocalPdfUrl(tab.url || "")) {
+    const activeBeforeRead = await getActiveTab();
+    if (generation !== activePageGeneration || activeBeforeRead?.id !== tab.id || activeBeforeRead?.url !== tab.url) return;
+    await prefillFromPage({ forceScan: false, silent: true, expectedTab: tab });
+    if (generation !== activePageGeneration) return;
     try {
-      const cached = await sendPageMessage(tab.id, "EEH_GET_CACHED_RESULTS");
+      const activeBeforeCache = await getActiveTab();
+      if (activeBeforeCache?.id !== tab.id || activeBeforeCache?.url !== tab.url) return;
+      const cached = await sendPageMessage(tab.id, "EEH_GET_CACHED_RESULTS", { expectedUrl: tab.url }, tab.url);
       if (generation !== activePageGeneration) return;
       if (cached?.results?.length) {
         currentResults = cached.results;
@@ -225,21 +264,6 @@ async function handleActivePageChanged(tab) {
     } catch {
       // The page may not allow content-script access.
     }
-  }
-  if (eehPaused || !isAutomaticScanningAllowed(storedScanMode)) {
-    setEmptyState(
-      eehPaused ? "Automatic scanning is paused" : "Automatic scanning is set to manual",
-      eehPaused ? "This page has not been scanned automatically. Your research question is saved." : "Your setting scans only when you choose Scan page.",
-      [{ label: "Scan this page once", action: () => scanCurrentTab() }]
-    );
-    setStatus(eehPaused ? "Scanning is paused. Your research question is saved." : "Automatic scanning is off for this page. Click Scan page to scan it once.");
-    return;
-  }
-  const autoEligible = await isAutomaticPage(tab, storedScanMode);
-  if (generation !== activePageGeneration) return;
-  if (!autoEligible) {
-    showScholarlyPageSkipped();
-    return;
   }
   clearEmptyState();
   if (isUnsupportedUrl(tab.url || "")) {
@@ -339,7 +363,12 @@ async function scanCurrentTab(options = {}) {
     } else if (looksLikePdfUrl(tab.url || "")) {
       response = await scanPdfUrl(tab.url, tab.title || "PDF");
     } else {
-      response = await sendPageMessage(tab.id, "EEH_SCAN", auto ? { automatic: true, expectedUrl: tab.url } : {});
+      const allowScroll = auto || (!eehPaused
+        && isAutomaticScanningAllowed(storedScanMode)
+        && await isAutomaticPage(tab, storedScanMode));
+      response = await sendPageMessage(tab.id, "EEH_SCAN", auto
+        ? { automatic: true, expectedUrl: tab.url, allowScroll: true }
+        : { explicitScan: true, expectedUrl: tab.url, allowScroll }, tab.url);
       if (response?.skipped) return;
       if ((!response.results || response.results.length === 0) && response.pdfLinks?.length) {
         setStatus("No page-text matches. Trying the first PDF link...");
@@ -438,9 +467,20 @@ async function saveScanMode() {
   await chrome.storage.sync.set({ scanMode: storedScanMode });
   lastActiveUrl = "";
   if (storedScanMode === "manual") {
+    currentResults = [];
+    currentResultContextKey = "";
+    renderResults();
+    const activeTab = await getActiveTab();
+    if (activeTab?.id) {
+      try {
+        await chrome.tabs.sendMessage(activeTab.id, { type: "EEH_DISABLE" });
+      } catch {
+        // A page reader is not loaded on this tab.
+      }
+    }
     setEmptyState(
       "Automatic scanning is set to manual",
-      "Pages will only be scanned when you click Scan page. Your research question and concepts stay saved.",
+      "The extension will not read pages until you click Scan page. Your research question and concepts stay saved.",
       [{ label: "Scan this page once", action: () => scanCurrentTab() }]
     );
     setStatus("Automatic scanning is off. Click Scan page whenever you want to scan.");
@@ -484,13 +524,13 @@ function isAutomaticScanningAllowed(mode) {
 function showScholarlyPageSkipped() {
   setEmptyState(
     "This page wasn’t recognized as scholarly",
-    "Scholarly pages only is on, so automatic scanning skipped this page. The page may still be an article that our checks didn’t recognize. Try Scan page once, or switch Automatic scanning to Any page.",
+    "Scholarly pages only is on, so the extension did not read or scan this page. The address may still belong to an article that our checks don’t recognize. Choose Scan this page once only if you want to scan it, or switch Automatic scanning to Any page.",
     [
       { label: "Scan this page once", action: () => scanCurrentTab() },
       { label: "Use Any page", action: () => { scanMode.value = "all"; saveScanMode(); } }
     ]
   );
-  setStatus("Automatic scan skipped: this page did not match the scholarly-page checks. You can scan it once or change the setting.");
+  setStatus("Automatic scan skipped without reading this page. Choose Scan this page once if you want to scan it.");
 }
 
 async function isAutomaticPage(tab, mode) {
@@ -498,8 +538,7 @@ async function isAutomaticPage(tab, mode) {
   if (mode === "manual") return false;
   const url = tab.url || "";
   if (isKnownNonScholarlyUrl(url)) return false;
-  if (looksScholarly(url)) return true;
-  return pageHasScholarlyMetadata(tab.id);
+  return looksScholarly(url);
 }
 
 function isKnownNonScholarlyUrl(url) {
@@ -524,48 +563,6 @@ function looksScholarly(url) {
       || /\.pdf(?:$|[?#])/i.test(path)
       || /\/(?:doi|article|articles|article-abstract|abstract|fulltext|full-text|paper|papers|journal|journals|publication|publications)(?:\/|[-?#]|$)/i.test(path)
         && /\.(?:org|edu|ac\.[a-z]{2,}|edu\.[a-z]{2,})$/i.test(host);
-  } catch {
-    return false;
-  }
-}
-
-async function pageHasScholarlyMetadata(tabId) {
-  if (!tabId) return false;
-  try {
-    const [result] = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: () => {
-        const meta = (name) => document.querySelector(`meta[name="${name}" i]`)?.content?.trim() || "";
-        const citationTitle = meta("citation_title");
-        const citationDoi = meta("citation_doi");
-        const journal = meta("citation_journal_title") || meta("citation_conference_title");
-        const authors = document.querySelectorAll('meta[name="citation_author" i]').length;
-        const scholarlyType = [...document.querySelectorAll('script[type="application/ld+json"]')].some((script) => {
-          try {
-            const parsed = JSON.parse(script.textContent || "null");
-            const entries = Array.isArray(parsed) ? [...parsed] : [parsed];
-            while (entries.length) {
-              const entry = entries.pop();
-              if (!entry || typeof entry !== "object") continue;
-              if (Array.isArray(entry)) {
-                entries.push(...entry);
-                continue;
-              }
-              if (Array.isArray(entry["@graph"])) entries.push(...entry["@graph"]);
-              const type = Array.isArray(entry?.["@type"]) ? entry["@type"].join(" ") : String(entry?.["@type"] || "");
-              if (/ScholarlyArticle|AcademicArticle|MedicalScholarlyArticle/i.test(type)) return true;
-            }
-            return false;
-          } catch {
-            return false;
-          }
-        });
-        const strongDoiCitation = Boolean(citationTitle && citationDoi);
-        const journalCitation = Boolean(citationTitle && journal && authors >= 1);
-        return Boolean(scholarlyType || strongDoiCitation || journalCitation);
-      }
-    });
-    return Boolean(result?.result);
   } catch {
     return false;
   }
@@ -869,14 +866,17 @@ function clearEmptyState() {
 }
 
 async function prefillFromPage(options = {}) {
-  const { forceScan = true, silent = false, clearResultsOnChange = false } = options;
+  const { forceScan = true, silent = false, clearResultsOnChange = false, expectedTab = null } = options;
   try {
     const tab = await getActiveTab();
     if (!tab?.id) return false;
+    if (expectedTab && (tab.id !== expectedTab.id || tab.url !== expectedTab.url)) return false;
 
-    const response = await sendPageMessage(tab.id, "EEH_SUGGEST");
+    const expectedUrl = expectedTab?.url || tab.url;
+    const response = await sendPageMessage(tab.id, "EEH_SUGGEST", { expectedUrl }, expectedUrl);
+    if (response?.skipped) return false;
     const stillActive = await getActiveTab();
-    if (stillActive?.id !== tab.id) return false;
+    if (stillActive?.id !== tab.id || stillActive?.url !== expectedUrl) return false;
     const suggestion = response.suggestion || {};
     let changed = false;
 
@@ -935,7 +935,16 @@ async function clearPageHighlightsOnly() {
   }
 }
 
-async function sendPageMessage(tabId, type, extra = {}) {
+async function sendPageMessage(tabId, type, extra = {}, expectedUrl = extra.expectedUrl || "") {
+  const isExpectedPage = async () => {
+    if (!expectedUrl) return true;
+    try {
+      return (await chrome.tabs.get(tabId))?.url === expectedUrl;
+    } catch {
+      return false;
+    }
+  };
+  if (!await isExpectedPage()) return { ok: false, skipped: true };
   try {
     return await chrome.tabs.sendMessage(tabId, {
       type,
@@ -943,7 +952,12 @@ async function sendPageMessage(tabId, type, extra = {}) {
       ...extra
     });
   } catch (error) {
+    if (!await isExpectedPage()) return { ok: false, skipped: true };
     await injectContentScript(tabId);
+    if (!await isExpectedPage()) {
+      try { await chrome.tabs.sendMessage(tabId, { type: "EEH_DISABLE" }); } catch {}
+      return { ok: false, skipped: true };
+    }
     return chrome.tabs.sendMessage(tabId, {
       type,
       settings: getSettings(),

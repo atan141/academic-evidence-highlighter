@@ -14,7 +14,7 @@ Use this checklist before publishing Academic Evidence Highlighter.
   - A saved PDF with **Scan saved PDF**
 - Test a history/autocomplete search selection without pressing Enter and confirm the research fields update after the selected query settles.
 - Test a long or infinite-scroll page, confirming newly loaded content is scanned and earlier results return after switching tabs and back without reloading the page.
-- Confirm Facebook and YouTube do not auto-scan in **Scholarly pages only** mode; in **Any page** mode, YouTube search-title matches are labeled as titles and not evidence.
+- Confirm Facebook, Messenger, Gmail, and YouTube are not read or scanned in **Scholarly pages only** mode; in **Any page** mode, YouTube search-title matches are labeled as titles and not evidence.
 - Confirm no old search-result preview badges appear on Scholar results.
 - Confirm **Clear all** clears fields, results, and page highlights.
 - Confirm CSV export works.
@@ -39,7 +39,7 @@ Review candidate evidence in scholarly search results, article pages, and PDFs.
 
 Academic Evidence Highlighter helps researchers, students, and readers quickly find candidate evidence in academic materials.
 
-Enter a research question or target concepts, then scan the current page or PDF. Automatic scanning defaults to scholarly pages only, using known publishers, academic URL patterns, and local citation metadata. Users can pause it or choose manual-only scanning. The extension highlights likely evidence sentences, shows short review cards in the side panel, labels references separately, and can export candidate results to CSV.
+Enter a research question or target concepts, then scan the current page or PDF. Automatic scanning defaults to scholarly pages only. The extension checks the page address before loading its page-reading script; unrecognized pages are not read unless the user chooses a one-time scan. Users can pause scanning or choose manual-only mode. The extension highlights likely evidence sentences, shows review cards in the side panel, labels references separately, and can export candidate results to CSV.
 
 Every result is candidate evidence for human verification. The extension is intended to speed up review, not replace careful reading or citation checking.
 
@@ -47,7 +47,7 @@ This version runs locally in the browser. It does not send paper text, PDF text,
 
 ## Suggested Permission Explanation
 
-Academic Evidence Highlighter needs access to check citation metadata locally on the active page in scholarly-only mode, scan pages recognized as scholarly or selected by the user's automatic scanning mode, rescan newly loaded active-page content while scrolling, and scan when the user explicitly clicks Scan page. Search fields and result caches are kept locally in memory for the open page; settings are stored in Chrome storage. It does not sell data, serve ads, or transmit paper text to a developer server.
+Academic Evidence Highlighter checks the active tab address locally in scholarly-only mode and reads page content only after the address is recognized or the user explicitly chooses to scan that page. Search fields and result caches are kept locally in memory for the open page; settings are stored in Chrome storage. It does not sell data, serve ads, or transmit paper text to a developer server.
 
 ## Suggested Category
 
