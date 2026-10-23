@@ -197,6 +197,43 @@ button.primary {
   font-size: 12px;
 }
 
+.emptyState {
+  background: #fff8e7;
+  border: 1px solid #e6c979;
+  border-left: 5px solid #b77b00;
+  border-radius: 8px;
+  color: #423716;
+  display: grid;
+  gap: 7px;
+  line-height: 1.45;
+  margin: 12px;
+  padding: 13px;
+}
+
+.emptyState[hidden] {
+  display: none;
+}
+
+.emptyState strong {
+  font-size: 14px;
+}
+
+.emptyState p {
+  color: inherit;
+  font-size: 12px;
+}
+
+.emptyStateActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 3px;
+}
+
+.emptyStateActions button {
+  font-size: 12px;
+}
+
 .results {
   display: grid;
   gap: 10px;

@@ -20,6 +20,7 @@ const dismissUpgradeNote = document.querySelector("#dismissUpgradeNote");
 const statusEl = document.querySelector("#status");
 const countEl = document.querySelector("#count");
 const resultsEl = document.querySelector("#results");
+const emptyStateEl = document.querySelector("#emptyState");
 const FIELD_KEYS = Object.keys(fields);
 const UI_PREF_KEYS = ["sortMode", "confidenceFilter"];
 
@@ -66,9 +67,7 @@ async function init() {
   chrome.storage.onChanged.addListener(handleStorageChange);
   updatePauseUi();
   const initialTab = await getActiveTab();
-  if (!eehPaused && storedScanMode !== "manual" && initialTab?.url && await isAutomaticPage(initialTab, storedScanMode)) {
-    await prefillFromPage();
-  }
+  if (initialTab?.url) await handleActivePageChanged(initialTab);
   await rememberActiveUrl();
   startSearchWatcher();
   startTabWatcher();
@@ -122,18 +121,40 @@ async function rememberActiveUrl() {
 }
 
 async function handleActivePageChanged(tab) {
-  if (eehPaused || !isAutomaticScanningAllowed(storedScanMode) || !await isAutomaticPage(tab, storedScanMode)) {
+  currentResults = [];
+  renderResults();
+  if (eehPaused || !isAutomaticScanningAllowed(storedScanMode)) {
+    setEmptyState(
+      eehPaused ? "Automatic scanning is paused" : "Automatic scanning is set to manual",
+      eehPaused ? "This page has not been scanned automatically. Your research question is saved." : "Your setting scans only when you choose Scan page.",
+      [{ label: "Scan this page once", action: () => scanCurrentTab() }]
+    );
     setStatus(eehPaused ? "Scanning is paused. Your research question is saved." : "Automatic scanning is off for this page. Click Scan page to scan it once.");
     return;
   }
-  currentResults = [];
-  renderResults();
+  if (!await isAutomaticPage(tab, storedScanMode)) {
+    setEmptyState(
+      "This page wasn’t recognized as scholarly",
+      "Scholarly pages only is on, so automatic scanning skipped this page. The page may still be an article that our checks didn’t recognize. Try Scan page once, or switch Automatic scanning to Any page.",
+      [
+        { label: "Scan this page once", action: () => scanCurrentTab() },
+        { label: "Use Any page", action: () => { scanMode.value = "all"; saveScanMode(); } }
+      ]
+    );
+    setStatus("Automatic scan skipped: this page did not match the scholarly-page checks. You can scan it once or change the setting.");
+    return;
+  }
+  clearEmptyState();
   if (isUnsupportedUrl(tab.url || "")) {
-    setStatus("New tab detected, but this page cannot be scanned by the extension.");
+    const message = "Chrome does not allow extensions to read this kind of page (for example, Chrome settings or the Chrome Web Store). Open the article in a regular webpage, or download its PDF and use Scan saved PDF.";
+    setEmptyState("Chrome does not allow scanning this page", message, [{ label: "Scan saved PDF", action: () => pdfFileInput.click() }]);
+    setStatus(message);
     return;
   }
   if (looksLikeLocalPdfUrl(tab.url || "")) {
-    setStatus("New local PDF detected. Use Scan saved PDF to choose the file directly.");
+    const message = "Chrome’s built-in PDF viewer does not expose its text to this extension. Download the PDF, then choose it with Scan saved PDF.";
+    setEmptyState("This PDF viewer can’t be scanned directly", message, [{ label: "Scan saved PDF", action: () => pdfFileInput.click() }]);
+    setStatus(message);
     return;
   }
   setStatus("New page detected. Auto-scanning with the current research question...");
@@ -168,6 +189,7 @@ async function scanCurrentTab(options = {}) {
   if (auto && (eehPaused || !isAutomaticScanningAllowed(storedScanMode))) return;
   await prefillFromPage({ forceScan: false, silent: true });
   await saveSettings();
+  clearEmptyState();
   setStatus(auto ? "Auto-scanning this page..." : "Scanning visible article text...");
   scanButton.disabled = true;
 
@@ -205,16 +227,27 @@ async function scanCurrentTab(options = {}) {
     } else if (currentResults.length) {
       setStatus("Review the highlighted sentences. Treat every item as candidate evidence until you verify it.");
     } else if ((response.pageTextLength || 0) < 50) {
-      setStatus("This page opened, but the extension could not find readable article text. It may use a protected viewer or load the article in a frame. Try the article’s full-text page or Scan saved PDF.");
+      const message = "The extension got no readable page text. This can happen when Chrome restricts access or the site uses a protected viewer, a frame, or a script-built page. This doesn’t necessarily mean the extension is broken. Try the article’s full-text page, or download its PDF and use Scan saved PDF.";
+      setEmptyState("This webpage couldn’t be read for scanning", message, [
+        { label: "Scan saved PDF", action: () => pdfFileInput.click() }
+      ]);
+      setStatus(message);
     } else {
-      setStatus("No candidates found. Try broader target terms or open the full-text article page.");
+      const message = "The page text was readable, but no sentences matched your current question and concepts. Try broader terms or open the article’s full-text page.";
+      setEmptyState("No matching candidate sentences", message);
+      setStatus(message);
     }
   } catch (error) {
     if (/403|401|forbidden|unauthorized/i.test(error.message)) {
-      setStatus("This PDF server blocked extension access. Use Scan saved PDF after saving/downloading the PDF.");
+      const message = "The PDF server denied access to the extension, so it couldn’t read this file in the tab. Download the PDF and use Scan saved PDF instead.";
+      setEmptyState("The PDF server blocked access", message, [{ label: "Scan saved PDF", action: () => pdfFileInput.click() }]);
+      setStatus(message);
     } else if (/cannot access contents|host permission|not allowed to access|permission to access this host/i.test(error.message)) {
-      setStatus("Chrome blocked access to this site. Open chrome://extensions, find Evidence Highlighter, open Site access, and allow it on this site or on all sites.");
+      const message = "Chrome blocked the extension from reading this site. Open chrome://extensions, find Academic Evidence Highlighter, choose Details → Site access, then allow access on this site. You can also download the article PDF and use Scan saved PDF.";
+      setEmptyState("Chrome did not allow access to this page", message, [{ label: "Scan saved PDF", action: () => pdfFileInput.click() }]);
+      setStatus(message);
     } else {
+      setEmptyState("This page could not be scanned", `The extension could not read the page (${error.message}). If this is an article, try its full-text page or download the PDF and use Scan saved PDF.`);
       setStatus(`Could not scan this tab: ${error.message}`);
     }
   } finally {
@@ -248,6 +281,11 @@ async function saveScanMode() {
   await chrome.storage.sync.set({ scanMode: storedScanMode });
   lastActiveUrl = "";
   if (storedScanMode === "manual") {
+    setEmptyState(
+      "Automatic scanning is set to manual",
+      "Pages will only be scanned when you click Scan page. Your research question and concepts stay saved.",
+      [{ label: "Scan this page once", action: () => scanCurrentTab() }]
+    );
     setStatus("Automatic scanning is off. Click Scan page whenever you want to scan.");
     return;
   }
@@ -563,6 +601,32 @@ function line(label, value) {
 
 function setStatus(message) {
   statusEl.textContent = message;
+}
+
+function setEmptyState(title, message, actions = []) {
+  const heading = document.createElement("strong");
+  heading.textContent = title;
+  const description = document.createElement("p");
+  description.textContent = message;
+  emptyStateEl.replaceChildren(heading, description);
+  if (actions.length) {
+    const actionRow = document.createElement("div");
+    actionRow.className = "emptyStateActions";
+    actions.forEach(({ label, action }) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.addEventListener("click", action);
+      actionRow.append(button);
+    });
+    emptyStateEl.append(actionRow);
+  }
+  emptyStateEl.hidden = false;
+}
+
+function clearEmptyState() {
+  emptyStateEl.hidden = true;
+  emptyStateEl.replaceChildren();
 }
 
 async function prefillFromPage(options = {}) {

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Academic Evidence Highlighter</title>
+    <link rel="stylesheet" href="sidepanel.css">
+  </head>
+  <body>
+    <main class="panel">
+      <header class="topbar">
+        <div>
+          <h1>Evidence Finder</h1>
+          <p>Candidate evidence for quick academic review.</p>
+        </div>
+        <div class="scanControl">
+          <div id="scanState" class="scanState" role="status">Scanning on</div>
+          <button id="pauseButton" class="pauseButton" type="button">Pause scanning</button>
+        </div>
+      </header>
+
+      <div id="upgradeNote" class="upgradeNote" hidden>
+        <span>Scanning now starts on scholarly pages only. You can change this below.</span>
+        <button id="dismissUpgradeNote" type="button" aria-label="Dismiss update note">Dismiss</button>
+      </div>
+
+      <section class="controls">
+        <label>
+          Automatic scanning
+          <select id="scanMode">
+            <option value="scholarly">Scholarly pages only</option>
+            <option value="all">Any page</option>
+            <option value="manual">Only when I click Scan</option>
+          </select>
+        </label>
+        <label>
+          Research question
+          <textarea id="question" rows="3" placeholder="How is forest cover related to tick abundance?"></textarea>
+        </label>
+        <label>
+          Concept 1
+          <input id="conceptOne" placeholder="forest cover">
+        </label>
+        <label>
+          Concept 2
+          <input id="conceptTwo" placeholder="tick abundance">
+        </label>
+        <label>
+          Extra terms
+          <input id="extraTerms" placeholder="density, prevalence, habitat, canopy">
+        </label>
+        <div class="buttonRow">
+          <button id="scanButton" class="primary">Scan page</button>
+          <button id="scanFileButton">Scan saved PDF</button>
+          <button id="clearButton">Clear all</button>
+        </div>
+        <input id="pdfFileInput" class="hiddenInput" type="file" accept="application/pdf,.pdf">
+      </section>
+
+      <section class="status" id="status">Open Scholar, an abstract page, or an article HTML page. The extension will try to fill this from your search.</section>
+
+      <section class="summary">
+        <strong id="count">0</strong>
+        <span>candidate sentences</span>
+        <button id="exportButton" disabled>Export CSV</button>
+      </section>
+
+      <section id="emptyState" class="emptyState" aria-live="polite" hidden></section>
+
+      <section class="resultControls">
+        <label>
+          Sort
+          <select id="sortMode">
+            <option value="order">Paper order</option>
+            <option value="compatibility">Highest compatibility</option>
+          </select>
+        </label>
+        <label>
+          Show
+          <select id="confidenceFilter">
+            <option value="noReferences">All except references</option>
+            <option value="high">High only</option>
+            <option value="medium">Medium and high</option>
+            <option value="low">Low only</option>
+            <option value="reference">References only</option>
+            <option value="allWithReferences">All including references</option>
+          </select>
+        </label>
+      </section>
+
+      <section id="results" class="results"></section>
+    </main>
+    <script src="sidepanel.js"></script>
+  </body>
+</html>

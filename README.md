@@ -2,7 +2,7 @@
 
 A Chrome extension prototype for finding candidate evidence while reading research pages.
 
-Version 0.17.1 scans scholarly search results, visible article text, and accessible PDFs; highlights likely evidence sentences; creates review cards; and exports a CSV. Automatic scanning defaults to scholarly pages only, and you can pause it at any time without clearing your research question. Scholarly-only mode recognizes common journal publishers and checks citation metadata locally on other active pages before deciding whether to scan. It is intentionally conservative: every item is labeled as candidate evidence for human verification.
+Version 0.17.2 scans scholarly search results, visible article text, and accessible PDFs; highlights likely evidence sentences; creates review cards; and exports a CSV. Automatic scanning defaults to scholarly pages only, and you can pause it at any time without clearing your research question. Scholarly-only mode recognizes common journal publishers and checks citation metadata locally on other active pages before deciding whether to scan. When a page is skipped or cannot be read, the side panel explains why and offers next steps. It is intentionally conservative: every item is labeled as candidate evidence for human verification.
 
 ## Load It In Chrome
 
@@ -11,7 +11,7 @@ Version 0.17.1 scans scholarly search results, visible article text, and accessi
 3. Click **Load unpacked**.
 4. Choose this folder:
 
-   `versions/0.17.1`
+   `versions/0.17.2`
 
 5. Open Google Scholar, another scholarly search page, an article abstract page, or an HTML full-text article.
 6. Click the extension icon. On scholarly pages, it can fill the question/concepts from the search and scan automatically. Use **Pause scanning** to stop automatic scans while keeping your question. While paused, **Scan this page once** scans only the current page.
