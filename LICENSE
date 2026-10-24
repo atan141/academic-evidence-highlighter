@@ -1,0 +1,41 @@
+LICENSE — ready to add to the repo (final text + 2-minute steps)
+Prepared 2026-10-24. The repo is public with no LICENSE file (verified live
+2026-10-24: root contains extension/, store-assets/, versions/, .gitignore,
+DATA_USAGE.md, MAINTENANCE_CHECKLIST.md, PRIVACY.md, README.md,
+SUBMISSION_CHECKLIST.md, TERMS.md, manifest.json — no LICENSE).
+No license already means all rights reserved; writing it down removes the
+"I thought it was open source" defence and makes any takedown faster.
+Costs nothing, changes no code, does not affect the store review in progress.
+1. File content — create LICENSE at the repo root with exactly this text
+Copyright (c) 2026 Annie Tan. All rights reserved.
+
+This repository is public so the code can be viewed, discussed, and
+referenced for portfolio and educational purposes.
+
+No license is granted to copy, modify, distribute, publish, or create
+derivative works from this code, in whole or in part — including as part
+of another browser extension or product — without the prior written
+permission of the copyright holder.
+
+Viewing this repository and forking it within GitHub (as permitted by
+GitHub's Terms of Service) do not grant any right to use the code
+outside of GitHub.
+One check before saving: the copyright line says "Annie Tan" (taken from the
+store account name annietan9011). Change it if you prefer a different name.
+2. Optional README addition — paste under a ## License heading
+## License
+
+Copyright © 2026 Annie Tan. All rights reserved. This project is
+source-visible, not open source: the code is public for viewing and
+discussion, and may not be copied, modified, or redistributed without
+permission. See [LICENSE](LICENSE).
+3. Steps — GitHub web UI, ~2 minutes, no git, no tokens
+Open https://github.com/atan141/academic-evidence-highlighter
+Click Add file → Create new file
+Name the file LICENSE (all caps, no extension)
+Paste the text from section 1
+Commit changes... → commit directly to main
+(Optional) open README.md → pencil icon → add the section from part 2 →
+   commit. The README currently has a "Policy Documents" section listing
+   PRIVACY.md / TERMS.md / DATA_USAGE.md — the License section fits right
+   after it.
