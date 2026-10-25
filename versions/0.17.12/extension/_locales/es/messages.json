@@ -1,6 +1,6 @@
 {
   "ext_name": {"message": "Academic Evidence Highlighter"},
-  "ext_description": {"message": "Revisa evidencia candidata en páginas académicas con un escaneo pausable y controlado por el usuario."},
+  "ext_description": {"message": "Resalta frases de evidencia en artículos de investigación y PDF a partir de tu pregunta y conceptos — privado, sin enviar nada al desarrollador."},
   "command_toggle_pause": {"message": "Pausar o reanudar el escaneo de Evidence Highlighter"},
   "panel_title": {"message": "Buscador de evidencia"},
   "panel_subtitle": {"message": "Evidencia candidata para una revisión académica rápida."},

@@ -1,6 +1,6 @@
 {
   "ext_name": {"message": "Academic Evidence Highlighter"},
-  "ext_description": {"message": "学術ページで候補エビデンスを確認できます。スキャンは一時停止可能で、ユーザーが制御します。"},
+  "ext_description": {"message": "あなたの質問と概念から、研究論文や PDF の証拠文をハイライトします——プライベートで、開発者に送信されることはありません。"},
   "command_toggle_pause": {"message": "Evidence Highlighter のスキャンを一時停止または再開"},
   "panel_title": {"message": "証拠ファインダー"},
   "panel_subtitle": {"message": "迅速な学術レビューのための候補エビデンス。"},

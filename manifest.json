@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Academic Evidence Highlighter",
-  "description": "Review candidate evidence in scholarly pages with pauseable, user-controlled scanning.",
+  "description": "Highlight evidence sentences in research papers and PDFs from your question and concepts — private, nothing sent to the developer.",
   "version": "0.17.12",
   "permissions": ["activeTab", "scripting", "storage", "sidePanel"],
   "host_permissions": ["<all_urls>"],

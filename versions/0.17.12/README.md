@@ -11,3 +11,5 @@ Latest version snapshot. The previous finalized 0.17.11 snapshot remains availab
 - Adds interface translations in Simplified Chinese, Japanese, and Spanish (English remains the default). The side panel follows the browser's Chrome language setting; unsupported languages fall back to English.
 - Translates interface words, card tags, and summary templates only. The paper's sentences, the user's question and concepts, and matched terms are never translated, and field example prompts stay in English because matching works on English input.
 - No permission, storage, or data-handling changes. Translations are bundled files; no text is sent to a translation service.
+
+- Uses the audited store summary in the package description ('private, nothing sent to the developer'), matching the privacy policy's wording.

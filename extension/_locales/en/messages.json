@@ -1,6 +1,6 @@
 {
   "ext_name": {"message": "Academic Evidence Highlighter", "description": "Extension name, shown in the Chrome Web Store, chrome://extensions, and the panel title. Keep identical in every locale."},
-  "ext_description": {"message": "Review candidate evidence in scholarly pages with pauseable, user-controlled scanning.", "description": "Extension description shown in the store and on chrome://extensions."},
+  "ext_description": {"message": "Highlight evidence sentences in research papers and PDFs from your question and concepts — private, nothing sent to the developer.", "description": "Extension description shown in the store and on chrome://extensions."},
   "command_toggle_pause": {"message": "Pause or resume Evidence Highlighter scanning", "description": "Keyboard shortcut description shown on chrome://extensions/shortcuts. Evidence Highlighter is the product short name; keep it."},
   "panel_title": {"message": "Evidence Finder", "description": "Heading at the top of the side panel."},
   "panel_subtitle": {"message": "Candidate evidence for quick academic review.", "description": "Subtitle under the panel heading."},

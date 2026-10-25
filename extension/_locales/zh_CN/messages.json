@@ -1,6 +1,6 @@
 {
   "ext_name": {"message": "Academic Evidence Highlighter"},
-  "ext_description": {"message": "在学术页面中审阅候选证据，扫描可暂停并由用户控制。"},
+  "ext_description": {"message": "根据你的问题和概念，高亮研究论文和 PDF 中的证据句——私密，不会发送给开发者。"},
   "command_toggle_pause": {"message": "暂停或恢复 Evidence Highlighter 扫描"},
   "panel_title": {"message": "证据查找器"},
   "panel_subtitle": {"message": "快速学术审阅的候选证据。"},

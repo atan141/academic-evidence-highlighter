@@ -42,7 +42,7 @@ Use this checklist before publishing Academic Evidence Highlighter.
 
 ## Suggested Short Description
 
-Highlight evidence sentences in research papers and PDFs from your question and concepts — private, nothing uploaded.
+Highlight evidence sentences in research papers and PDFs from your question and concepts — private, nothing sent to the developer.
 
 ## Suggested Detailed Description
 
