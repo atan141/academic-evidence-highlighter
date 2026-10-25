@@ -23,6 +23,10 @@ Use this checklist every time the extension code, permissions, data behavior, UI
   - `extension/manifest.json`
 - Confirm the version number was bumped if the user should reload or upload a new package.
 - Confirm the Chrome upload ZIP is rebuilt from the correct extension root when a release package is needed.
+- When any user-visible string changes, update every `_locales/*/messages.json` (English fallback covers gaps, but gaps should not ship silently).
+- Never place two numbered placeholders directly next to each other in a message (Chrome misreads `$3$2` as a named variable); keep text between placeholders.
+- Field example prompts stay in English in all locales (matching works on English input).
+- Card tags are display-only translations; logic values, filter values, CSV values, and pill colour classes stay English.
 
 ## Privacy and Legal Consistency Review
 

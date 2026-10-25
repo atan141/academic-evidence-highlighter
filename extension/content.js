@@ -4,6 +4,11 @@ if (globalThis.__EEH_CONTENT_LOADED__) {
 }
 globalThis.__EEH_CONTENT_LOADED__ = true;
 
+// Localized generated summary templates: the template words come from
+// _locales via chrome.i18n, while user terms and paper text stay verbatim
+// as placeholders. Scoring, tokenizing, and matching code is untouched.
+const t = (key, subs) => chrome.i18n.getMessage(key, subs);
+
 let scrollIdleTimer = 0;
 let lastScrollSignalAt = 0;
 let pageReaderDisabled = false;
@@ -439,17 +444,17 @@ function summarizeSentence(sentence, settings, intent = inferIntent(settings)) {
 
   if (intent.kind === "food" && conceptOne) {
     const food = inferFoodAnswer(trimmed);
-    return food ? `${conceptOne} may eat ${food}.` : compressSentence(trimmed);
+    return food ? t("summary_food", [conceptOne, food]) : compressSentence(trimmed);
   }
 
   if (intent.kind === "guide") {
     const topic = extractGuideTopic(trimmed);
-    return topic ? `Key care point: ${topic}.` : compressSentence(trimmed);
+    return topic ? t("summary_care", topic) : compressSentence(trimmed);
   }
 
   if (conceptOne && conceptTwo) {
     const direction = inferDirection(trimmed);
-    return `${conceptOne} ${direction} ${conceptTwo}.`;
+    return t("summary_relation", [conceptOne, direction, conceptTwo]);
   }
 
   if (settings.question?.trim()) {
@@ -669,15 +674,15 @@ function cleanAnswer(value) {
 
 function inferDirection(sentence) {
   if (/\b(higher|greater|more|increased|increase|positive|positively)\b/i.test(sentence)) {
-    return "may increase or be positively related to";
+    return t("direction_increase");
   }
   if (/\b(lower|less|decreased|decrease|reduced|negative|negatively)\b/i.test(sentence)) {
-    return "may decrease or be negatively related to";
+    return t("direction_decrease");
   }
   if (/\b(no|not|neither|unrelated|not associated|no association|no relationship)\b/i.test(sentence)) {
-    return "may not be clearly related to";
+    return t("direction_unclear");
   }
-  return "may be related to";
+  return t("direction_general");
 }
 
 function compressSentence(sentence) {

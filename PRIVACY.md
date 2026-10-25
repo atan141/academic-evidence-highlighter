@@ -1,6 +1,6 @@
 # Privacy Policy for Academic Evidence Highlighter
 
-Effective date: October 23, 2026
+Effective date: October 25, 2026
 
 Academic Evidence Highlighter is a Chrome extension that helps users find candidate evidence in scholarly search results, article pages, and PDFs. This policy explains what information the extension uses and how it handles that information.
 
@@ -35,6 +35,10 @@ Specifically, the extension uses page/PDF text to:
 - Show evidence cards in the side panel.
 - Export a CSV file when the user chooses to export results.
 - Detect references/bibliographies so those results can be labeled separately.
+
+## Language
+
+The side panel interface is available in English, Simplified Chinese, Japanese, and Spanish. Chrome selects the interface language from the browser's language setting; other languages fall back to English. Interface translations are bundled files inside the extension — no text is sent to a translation service, and no new information is collected for language support. The paper's sentences, the user's research question and concepts, and matched terms are never translated. Field example prompts stay in English because matching works on English input. Language selection is a browser setting, not information stored by the extension.
 
 ## Storage
 

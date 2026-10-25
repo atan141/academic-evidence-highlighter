@@ -65,9 +65,50 @@ let searchCheckInFlight = false;
 let eehPaused = false;
 let storedScanMode = "scholarly";
 
+const t = (key, subs) => chrome.i18n.getMessage(key, subs);
+
+// Display text for the category tags on result cards. The underlying values
+// (result.confidence / result.evidenceType) stay English: they are logic keys
+// (filtering, sorting, CSV values) and CSS tone classes. Only the visible
+// label is translated. Unknown values render verbatim.
+const TAG_TEXT = {
+  high: "tag_high",
+  medium: "tag_medium",
+  low: "tag_low",
+  reference: "tag_reference",
+  "care guidance": "tag_care_guidance",
+  relationship: "tag_relationship",
+  "candidate evidence": "tag_candidate_evidence",
+};
+const tagText = (value) => (TAG_TEXT[value] ? t(TAG_TEXT[value]) : value);
+
+// Localizes the static panel markup (labels, buttons, options, hints) from
+// _locales. Chrome substitutes __MSG__ placeholders only in manifest.json and
+// CSS files, not in HTML, so static HTML text is wired through data-i18n
+// attributes (text), data-i18n-placeholder (placeholders) and
+// data-i18n-aria-label (accessible labels) instead. The browser locale is
+// selected automatically by chrome.i18n, falling back to the default locale.
+function localizePanel() {
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const text = chrome.i18n.getMessage(el.dataset.i18n);
+    if (text) el.textContent = text;
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const text = chrome.i18n.getMessage(el.dataset.i18nPlaceholder);
+    if (text) el.placeholder = text;
+  });
+  document.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
+    const text = chrome.i18n.getMessage(el.dataset.i18nAriaLabel);
+    if (text) el.setAttribute("aria-label", text);
+  });
+  document.title = chrome.i18n.getMessage("ext_name");
+  document.documentElement.lang = chrome.i18n.getUILanguage();
+}
+
 init();
 
 async function init() {
+  localizePanel();
   const [saved, sessionSaved] = await Promise.all([
     chrome.storage.sync.get([...FIELD_KEYS, ...UI_PREF_KEYS, "eehPaused", "scanMode", "showV17Note"]),
     chrome.storage.session.get("tabResearchSettings")
@@ -218,8 +259,8 @@ function startSearchWatcher() {
       } else if (changed) {
         clearEmptyState();
         setStatus(eehPaused
-          ? "Updated the research question from this page’s search. Automatic scanning is paused; click Scan this page once to scan."
-          : "Updated the research question from this page’s search. Click Scan page when you’re ready.");
+          ? t("status_search_updated_paused")
+          : t("status_search_updated"));
       }
     } catch {
       // Ignore tabs which do not expose a page to extension scripts.
@@ -243,7 +284,7 @@ async function handleContentScroll(sender) {
     }
     if (Date.now() - lastScrollScanAt < 1000) return;
     lastScrollScanAt = Date.now();
-    setStatus("Scanning the loaded page content. Keep scrolling to load more; results from earlier content stay here.");
+    setStatus(t("status_scrolling"));
     await autoScanCurrentTab();
   } catch {
     // Ignore transient tab changes while scrolling.
@@ -294,11 +335,11 @@ async function handleActivePageChanged(tab) {
   renderResults();
   if (eehPaused || !isAutomaticScanningAllowed(storedScanMode)) {
     setEmptyState(
-      eehPaused ? "Automatic scanning is paused" : "Automatic scanning is set to manual",
-      eehPaused ? "This page has not been read for scanning. Your research question is saved." : "This page is not read unless you choose Scan page.",
-      [{ label: "Scan this page once", action: () => scanCurrentTab() }]
+      eehPaused ? t("empty_auto_paused_title") : t("empty_manual_title"),
+      eehPaused ? t("empty_auto_paused_msg") : t("empty_manual_msg_short"),
+      [{ label: t("button_scan_page_once"), action: () => scanCurrentTab() }]
     );
-    setStatus(eehPaused ? "Scanning is paused. Your research question is saved." : "Automatic scanning is off for this page. Click Scan page to scan it once.");
+    setStatus(eehPaused ? t("status_paused_saved") : t("status_manual_off"));
     return;
   }
   if (storedScanMode === "scholarly") {
@@ -344,18 +385,18 @@ async function handleActivePageChanged(tab) {
   }
   clearEmptyState();
   if (isUnsupportedUrl(tab.url || "")) {
-    const message = "Chrome does not allow extensions to read this kind of page (for example, Chrome settings or the Chrome Web Store). Open the article in a regular webpage, or download its PDF and use Scan saved PDF.";
-    setEmptyState("Chrome does not allow scanning this page", message, [{ label: "Scan saved PDF", action: () => pdfFileInput.click() }]);
+    const message = t("empty_unsupported_msg");
+    setEmptyState(t("empty_unsupported_title"), message, [{ label: t("button_scan_pdf"), action: () => pdfFileInput.click() }]);
     setStatus(message);
     return;
   }
   if (looksLikeLocalPdfUrl(tab.url || "")) {
-    const message = "Chrome’s built-in PDF viewer does not expose its text to this extension. Download the PDF, then choose it with Scan saved PDF.";
-    setEmptyState("This PDF viewer can’t be scanned directly", message, [{ label: "Scan saved PDF", action: () => pdfFileInput.click() }]);
+    const message = t("empty_localpdf_msg");
+    setEmptyState(t("empty_localpdf_title"), message, [{ label: t("button_scan_pdf"), action: () => pdfFileInput.click() }]);
     setStatus(message);
     return;
   }
-  setStatus("New page detected. Auto-scanning with the current research question...");
+  setStatus(t("status_new_page_auto"));
   await autoScanCurrentTab();
 }
 
@@ -372,7 +413,7 @@ async function autoScanCurrentTab() {
   }
   const settings = getSettings();
   if (!settings.question && !settings.conceptOne && !settings.conceptTwo && !settings.extraTerms) {
-    setStatus("New page detected. Enter a research question or search Scholar to start scanning.");
+    setStatus(t("status_new_page_prompt"));
     return;
   }
 
@@ -433,14 +474,14 @@ async function scanCurrentTab(options = {}) {
   tab = activeAfterPrefill;
   await saveSettings();
   clearEmptyState();
-  setStatus(auto ? "Auto-scanning this page..." : "Scanning visible article text...");
+  setStatus(t(auto ? "status_auto_scanning" : "status_scanning_visible"));
   scanButton.disabled = true;
   scanInProgress = true;
 
   try {
     let response;
     if (looksLikeLocalPdfUrl(tab.url || "")) {
-      setStatus("Chrome is showing a local PDF viewer. Use Scan saved PDF to choose the downloaded file directly.");
+      setStatus(t("status_local_pdf_viewer"));
       return;
     } else if (looksLikePdfUrl(tab.url || "")) {
       response = await scanPdfUrl(tab.url, tab.title || "PDF");
@@ -453,7 +494,7 @@ async function scanCurrentTab(options = {}) {
         : { explicitScan: true, expectedUrl: tab.url, allowScroll }, tab.url);
       if (response?.skipped) return;
       if ((!response.results || response.results.length === 0) && response.pdfLinks?.length) {
-        setStatus("No page-text matches. Trying the first PDF link...");
+        setStatus(t("status_trying_pdf_link"));
         response = await scanPdfUrl(response.pdfLinks[0], response.title || tab.title || "PDF");
       }
     }
@@ -476,47 +517,47 @@ async function scanCurrentTab(options = {}) {
 
     if (pageInfo.isPdfLike) {
       setStatus(currentResults.length
-        ? "Scanned PDF text. Built-in PDF viewers cannot be highlighted yet, so review the evidence cards here."
-        : "Could not extract useful PDF text. Some journal PDFs are protected, image-only, or compressed beyond this prototype.");
+        ? t("status_pdf_scanned")
+        : t("status_pdf_no_text"));
     } else if (currentResults.length && currentResults.every((result) => result.sourceType === "video_title")) {
-      setStatus(`Found ${currentResults.length} YouTube video title${currentResults.length === 1 ? "" : "s"} matching your terms. Titles are not evidence; open a video description or transcript to scan study content.`);
+      setStatus(t(currentResults.length === 1 ? "status_youtube_titles_one" : "status_youtube_titles_many", String(currentResults.length)));
     } else if (currentResults.length) {
-      setStatus(`Scanned the content loaded so far and found ${currentResults.length} candidate sentence${currentResults.length === 1 ? "" : "s"}. On feeds, keep scrolling to load and scan more; earlier results stay here. Verify each candidate.`);
+      setStatus(t(currentResults.length === 1 ? "status_found_one" : "status_found_many", String(currentResults.length)));
     } else if ((response.pageTextLength || 0) < 50) {
       const bodyTextLength = response.pageBodyTextLength || 0;
       const hasVisiblePageText = bodyTextLength >= 50;
       const message = hasVisiblePageText
-        ? "The browser page contains visible text, but the scanner could not separate it into readable text blocks. This site’s layout is not fully supported yet; this is an extension compatibility limitation, not proof that Chrome blocked access. Try selecting and copying the text into a document or opening a simpler text view."
-        : "The extension could not read text from this page. Chrome or the site may restrict access, or the page may use a protected viewer or frame. If this is an article, try its full-text page or download the PDF and use Scan saved PDF.";
-      setEmptyState(hasVisiblePageText ? "This page layout is not supported yet" : "The extension could not read this page", message, hasVisiblePageText ? [] : [
-        { label: "Scan saved PDF", action: () => pdfFileInput.click() }
+        ? t("empty_layout_msg")
+        : t("empty_unreadable_msg");
+      setEmptyState(hasVisiblePageText ? t("empty_layout_title") : t("empty_unreadable_title"), message, hasVisiblePageText ? [] : [
+        { label: t("button_scan_pdf"), action: () => pdfFileInput.click() }
       ]);
       setStatus(message);
     } else {
       const isYouTubeResults = isYouTubeResultsPage(response.url || tab.url);
       const message = isYouTubeResults
-        ? "YouTube search results mainly contain video titles. None matched your current terms strongly enough to show. Titles are not evidence; open a video description or transcript and scan that text for study findings."
-        : "The text loaded so far was readable, but no sentences matched your current question and concepts. On feeds or pages that load content as you scroll, keep scrolling to load more; the extension will scan new content and keep earlier results. You can also try broader terms.";
-      setEmptyState(isYouTubeResults ? "No matching YouTube video titles" : "No matching candidate sentences", message);
+        ? t("empty_youtube_msg")
+        : t("empty_nomatch_msg");
+      setEmptyState(isYouTubeResults ? t("empty_youtube_title") : t("empty_nomatch_title"), message);
       setStatus(message);
     }
   } catch (error) {
     if (/403|401|forbidden|unauthorized/i.test(error.message)) {
-      const message = "The PDF server denied access to the extension, so it couldn’t read this file in the tab. Download the PDF and use Scan saved PDF instead.";
-      setEmptyState("The PDF server blocked access", message, [{ label: "Scan saved PDF", action: () => pdfFileInput.click() }]);
+      const message = t("empty_pdf_denied_msg");
+      setEmptyState(t("empty_pdf_denied_title"), message, [{ label: t("button_scan_pdf"), action: () => pdfFileInput.click() }]);
       setStatus(message);
     } else if (/cannot access contents|host permission|not allowed to access|permission to access this host/i.test(error.message)) {
-      const message = "Chrome blocked the extension from reading this site. Open chrome://extensions, find Academic Evidence Highlighter, choose Details → Site access, then allow access on this site. You can also download the article PDF and use Scan saved PDF.";
-      setEmptyState("Chrome did not allow access to this page", message, [{ label: "Scan saved PDF", action: () => pdfFileInput.click() }]);
+      const message = t("empty_blocked_msg");
+      setEmptyState(t("empty_blocked_title"), message, [{ label: t("button_scan_pdf"), action: () => pdfFileInput.click() }]);
       setStatus(message);
     } else {
-      setEmptyState("This page could not be scanned", `The extension could not read the page (${error.message}). If this is an article, try its full-text page or download the PDF and use Scan saved PDF.`);
-      setStatus(`Could not scan this tab: ${error.message}`);
+      setEmptyState(t("empty_scan_failed_title"), t("empty_scan_failed_msg", error.message));
+      setStatus(t("status_scan_failed", error.message));
     }
   } finally {
     scanInProgress = false;
     scanButton.disabled = false;
-    if (eehPaused && !auto) setStatus("Scanned this page once. Automatic scanning is still paused.");
+    if (eehPaused && !auto) setStatus(t("status_scanned_once_paused"));
     if (!autoScanInFlight && scrollScanQueued && queuedScrollTabId) {
       const tabId = queuedScrollTabId;
       scrollScanQueued = false;
@@ -554,13 +595,13 @@ async function clearPausedScanState() {
     }
   }));
 
-  setEmptyState("Scanning is paused", "Current results and page highlights were cleared. Resume scanning to scan eligible pages again.");
-  setStatus("Scanning paused. Current results and page highlights were cleared.");
+  setEmptyState(t("paused_title"), t("empty_paused_cleared_msg"));
+  setStatus(t("status_paused_cleared"));
 }
 
 async function resumeScanning() {
   await setPausedState(false);
-  setStatus("Scanning resumed. Checking this page now...");
+  setStatus(t("status_resumed"));
   await resumeActivePage();
 }
 
@@ -572,7 +613,7 @@ async function setPausedState(paused) {
 
 function confirmResumeForScan() {
   if (!pausedScanDialog?.showModal) {
-    return Promise.resolve(window.confirm("Scanning is paused. Resume scanning and scan this page now? This will turn off Pause scanning."));
+    return Promise.resolve(window.confirm(t("confirm_resume_text")));
   }
   return new Promise((resolve) => {
     const onClose = () => resolve(pausedScanDialog.returnValue === "resume");
@@ -600,11 +641,11 @@ async function saveScanMode() {
       }
     }
     setEmptyState(
-      "Automatic scanning is set to manual",
-      "The extension will not read pages until you click Scan page. Your research question and concepts stay saved.",
-      [{ label: "Scan this page once", action: () => scanCurrentTab() }]
+      t("empty_manual_title"),
+      t("empty_manual_msg_long"),
+      [{ label: t("button_scan_page_once"), action: () => scanCurrentTab() }]
     );
-    setStatus("Automatic scanning is off. Click Scan page whenever you want to scan.");
+    setStatus(t("status_manual_off_generic"));
     return;
   }
   const tab = await getActiveTab();
@@ -616,11 +657,11 @@ async function saveScanMode() {
 }
 
 function updatePauseUi() {
-  pauseButton.textContent = eehPaused ? "Resume scanning" : "Pause scanning";
-  scanStateEl.textContent = eehPaused ? "Paused" : "Scanning on";
+  pauseButton.textContent = eehPaused ? t("pause_button_resume") : t("pause_button_pause");
+  scanStateEl.textContent = eehPaused ? t("scan_state_paused") : t("scan_state_on");
   scanStateEl.classList.toggle("paused", eehPaused);
   pauseButton.setAttribute("aria-pressed", String(eehPaused));
-  scanButton.textContent = eehPaused ? "Scan this page once" : "Scan page";
+  scanButton.textContent = eehPaused ? t("button_scan_page_once") : t("button_scan_page");
 }
 
 function handleStorageChange(changes, areaName) {
@@ -653,14 +694,14 @@ function isAutomaticScanningAllowed(mode) {
 
 function showScholarlyPageSkipped() {
   setEmptyState(
-    "This page wasn’t recognized as scholarly",
-    "Scholarly pages only is on, so the extension did not read or scan this page. The address may still belong to an article that our checks don’t recognize. Choose Scan this page once only if you want to scan it, or switch Automatic scanning to Any page.",
+    t("empty_scholarly_title"),
+    t("empty_scholarly_msg"),
     [
-      { label: "Scan this page once", action: () => scanCurrentTab() },
-      { label: "Use Any page", action: () => { scanMode.value = "all"; saveScanMode(); } }
+      { label: t("button_scan_page_once"), action: () => scanCurrentTab() },
+      { label: t("action_use_any_page"), action: () => { scanMode.value = "all"; saveScanMode(); } }
     ]
   );
-  setStatus("Automatic scan skipped without reading this page. Choose Scan this page once if you want to scan it.");
+  setStatus(t("status_skip_no_read"));
 }
 
 async function isAutomaticPage(tab, mode) {
@@ -704,7 +745,7 @@ async function scanSelectedPdf() {
 
   await saveSettings();
   scanFileButton.disabled = true;
-  setStatus(`Scanning saved PDF: ${file.name}`);
+  setStatus(t("status_scanning_saved_pdf", file.name));
 
   try {
     const buffer = await file.arrayBuffer();
@@ -714,14 +755,14 @@ async function scanSelectedPdf() {
     pageInfo = { title: file.name, url: `local:${file.name}`, isPdfLike: true };
     renderResults();
     if (currentResults.length) {
-      setStatus(`Scanned the saved PDF locally and extracted ${text.length.toLocaleString()} text characters. Review evidence cards here; local PDFs cannot be page-highlighted yet.`);
+      setStatus(t("status_saved_pdf_scanned", text.length.toLocaleString()));
     } else if (text.length < 200) {
-      setStatus("I could not extract readable text from this PDF. It may be scanned images, encrypted, or too compressed for this prototype parser.");
+      setStatus(t("status_saved_pdf_no_text"));
     } else {
-      setStatus(`Extracted ${text.length.toLocaleString()} text characters, but found no candidates for the current question. Try broader terms or a different question.`);
+      setStatus(t("status_saved_pdf_no_candidates", text.length.toLocaleString()));
     }
   } catch (error) {
-    setStatus(`Could not scan saved PDF: ${error.message}`);
+    setStatus(t("status_saved_pdf_failed", error.message));
   } finally {
     scanFileButton.disabled = false;
     pdfFileInput.value = "";
@@ -743,7 +784,7 @@ async function clearAll() {
   currentResults = [];
   currentResultContextKey = "";
   renderResults();
-  setStatus("Cleared search fields, results, and page highlights.");
+  setStatus(t("status_cleared"));
 }
 
 function mergeCandidateResults(existing, incoming) {
@@ -769,17 +810,17 @@ function renderResults() {
   countEl.textContent = String(visibleResults.length);
   const titleOnlyResults = currentResults.length > 0 && currentResults.every((result) => result.sourceType === "video_title");
   countCaptionEl.textContent = titleOnlyResults
-    ? (currentResults.length > visibleResults.length ? `shown of ${currentResults.length} video titles (not evidence)` : "video titles (not evidence)")
-    : (currentResults.length > visibleResults.length ? `shown of ${currentResults.length} candidate sentences` : "candidate sentences");
+    ? (currentResults.length > visibleResults.length ? t("count_shown_titles", String(currentResults.length)) : t("count_video_titles"))
+    : (currentResults.length > visibleResults.length ? t("count_shown_candidates", String(currentResults.length)) : t("count_candidates"));
   exportButton.disabled = currentResults.length === 0;
   resultsEl.replaceChildren();
 
   if (currentResults.length > 0 && visibleResults.length === 0) {
     setEmptyState(
-      "Matches were found, but the current filter is hiding them",
-      `The scan found ${currentResults.length} candidate sentence${currentResults.length === 1 ? "" : "s"}. Your Show filter is set to “${confidenceFilter.selectedOptions[0]?.textContent || "a limited view"},” which hides all of them. Show all including references to view every match.`,
+      t("empty_filter_title"),
+      t(currentResults.length === 1 ? "empty_filter_msg_one" : "empty_filter_msg_many", [String(currentResults.length), confidenceFilter.selectedOptions[0]?.textContent || t("filter_fallback_label")]),
       [{
-        label: "Show all matches",
+        label: t("action_show_all"),
         action: () => {
           confidenceFilter.value = "allWithReferences";
           saveUiPreferencesAndRender();
@@ -796,7 +837,7 @@ function renderResults() {
     if (result.canHighlight !== false) {
       card.tabIndex = 0;
       card.setAttribute("role", "button");
-      card.setAttribute("aria-label", `Show candidate ${index + 1} in the paper`);
+      card.setAttribute("aria-label", t("aria_show_candidate", String(index + 1)));
       card.addEventListener("click", () => focusResult(result));
       card.addEventListener("keydown", (event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -809,8 +850,8 @@ function renderResults() {
     const meta = document.createElement("div");
     meta.className = "meta";
     meta.append(
-      pill(result.confidence, result.confidence),
-      pill(result.evidenceType),
+      pill(tagText(result.confidence), result.confidence),
+      pill(tagText(result.evidenceType)),
       pill(`#${index + 1}`)
     );
 
@@ -830,23 +871,23 @@ function renderResults() {
     const fieldsBlock = document.createElement("div");
     fieldsBlock.className = "fields";
     const detailLines = [
-      line("Short summary", result.summary),
-      line("Concepts", result.concepts),
-      line("Matched", result.matchedTerms?.join(", ") || "n/a")
+      line(t("field_short_summary"), result.summary),
+      line(t("field_concepts"), result.concepts),
+      line(t("field_matched"), result.matchedTerms?.join(", ") || t("value_na"))
     ];
     if (result.pageNumber) {
-      detailLines.splice(1, 0, line("PDF page", result.pageNumber));
+      detailLines.splice(1, 0, line(t("field_pdf_page"), result.pageNumber));
     }
     fieldsBlock.append(...detailLines);
 
     const action = document.createElement("div");
     if (result.canHighlight === false) {
       action.className = "pageNote";
-      action.textContent = "Text scanned from the page. In-page highlighting isn’t available for this layout.";
+      action.textContent = t("page_note_no_highlight");
     } else {
       const focusButton = document.createElement("button");
       focusButton.className = "cardButton";
-      focusButton.textContent = "Show highlight";
+      focusButton.textContent = t("button_show_highlight");
       focusButton.addEventListener("click", (event) => {
         event.stopPropagation();
         focusResult(result);
@@ -910,11 +951,11 @@ async function focusResult(result) {
   if (pageInfo.isPdfLike || result.id?.startsWith("pdf-")) {
     if (result.pageNumber && pageInfo.url && !pageInfo.url.startsWith("local:")) {
       await jumpToPdfPage(pageInfo.url, result.pageNumber);
-      setStatus(`Opened PDF page ${result.pageNumber}. Built-in PDF viewers cannot show extension highlights yet.`);
+      setStatus(t("status_pdf_page_opened", String(result.pageNumber)));
     } else if (result.pageNumber) {
-      setStatus(`This result is on PDF page ${result.pageNumber}. Local saved PDFs cannot be jumped/highlighted yet.`);
+      setStatus(t("status_pdf_page_local", String(result.pageNumber)));
     } else {
-      setStatus("This result came from extracted PDF text, so there is no page highlight to jump to yet.");
+      setStatus(t("status_pdf_no_jump"));
     }
     return;
   }
@@ -929,10 +970,10 @@ async function focusResult(result) {
     });
 
     if (response?.found === false) {
-      setStatus("I could not find that exact highlight on the page. Try scanning this page again.");
+      setStatus(t("status_highlight_not_found"));
     }
   } catch {
-    setStatus("I could not jump to that page highlight. Try scanning this page again.");
+    setStatus(t("status_highlight_jump_failed"));
   }
 }
 
@@ -946,13 +987,13 @@ async function jumpToPdfPage(url, pageNumber) {
 function pill(text, tone = "") {
   const el = document.createElement("span");
   el.className = `pill ${tone}`;
-  el.textContent = text || "candidate";
+  el.textContent = text || t("fallback_candidate");
   return el;
 }
 
 function line(label, value) {
   const el = document.createElement("div");
-  el.textContent = `${label}: ${value || "unknown"}`;
+  el.textContent = `${label}: ${value || t("value_unknown")}`;
   return el;
 }
 
@@ -1041,18 +1082,18 @@ async function prefillFromPage(options = {}) {
         renderResults();
         clearEmptyState();
       }
-      if (!silent) setStatus("Updated the research question and concepts from this page’s search. You can edit them or scan now.");
+      if (!silent) setStatus(t("status_prefill_updated"));
       if (forceScan && suggestion.conceptOne && suggestion.conceptTwo) {
         await scanCurrentTab();
       }
     } else if (!silent && !canUsePageSuggestion && fields.question.value.trim()) {
-      setStatus("Using your saved search intent. Page titles will not replace your concepts.");
+      setStatus(t("status_saved_intent"));
     } else if (!silent && response.pdfLinks?.length) {
-      setStatus(`Found ${response.pdfLinks.length} PDF link(s). This prototype can detect them, but it cannot yet read protected PDF viewers directly.`);
+      setStatus(t(response.pdfLinks.length === 1 ? "status_pdf_links_one" : "status_pdf_links_many", String(response.pdfLinks.length)));
     }
     return changed;
   } catch {
-    if (!silent) setStatus("I couldn’t read a search query from this page. Enter a research question or click Scan page to scan with your saved terms.");
+    if (!silent) setStatus(t("status_no_query"));
     return false;
   }
 }
@@ -1109,7 +1150,7 @@ async function injectContentScript(tabId) {
 
 function exportCsv() {
   const rows = [
-    ["Short summary", "Extracted answer", "Concepts", "PDF page", "Evidence type", "Confidence", "Evidence sentence", "Page title", "URL"]
+    [t("field_short_summary"), t("csv_extracted_answer"), t("field_concepts"), t("field_pdf_page"), t("csv_evidence_type"), t("csv_confidence"), t("csv_evidence_sentence"), t("csv_page_title"), t("csv_url")]
   ];
 
   currentResults.forEach((result) => {
@@ -1153,7 +1194,7 @@ function isUnsupportedUrl(url) {
 }
 
 async function scanPdfUrl(url, title) {
-  setStatus("Fetching PDF text...");
+  setStatus(t("status_fetching_pdf"));
   const response = await fetch(url, { credentials: "include" });
   if (!response.ok) throw new Error(`PDF request failed with ${response.status}`);
 
@@ -1472,17 +1513,17 @@ function summarizeSentence(sentence, settings, intent = inferIntent(settings)) {
 
   if (intent.kind === "food" && conceptOne) {
     const food = inferFoodAnswer(trimmed);
-    return food ? `${conceptOne} may eat ${food}.` : compressSentence(trimmed);
+    return food ? t("summary_food", [conceptOne, food]) : compressSentence(trimmed);
   }
 
   if (intent.kind === "guide") {
     const topic = extractGuideTopic(trimmed);
-    return topic ? `Key care point: ${topic}.` : compressSentence(trimmed);
+    return topic ? t("summary_care", topic) : compressSentence(trimmed);
   }
 
   if (conceptOne && conceptTwo) {
     const direction = inferDirection(trimmed);
-    return `${conceptOne} ${direction} ${conceptTwo}.`;
+    return t("summary_relation", [conceptOne, direction, conceptTwo]);
   }
 
   return compressSentence(trimmed);
@@ -1651,10 +1692,10 @@ function cleanAnswer(value) {
 }
 
 function inferDirection(sentence) {
-  if (/\b(higher|greater|more|increased|increase|positive|positively)\b/i.test(sentence)) return "may increase or be positively related to";
-  if (/\b(lower|less|decreased|decrease|reduced|negative|negatively)\b/i.test(sentence)) return "may decrease or be negatively related to";
-  if (/\b(no|not|neither|unrelated|not associated|no association|no relationship)\b/i.test(sentence)) return "may not be clearly related to";
-  return "may be related to";
+  if (/\b(higher|greater|more|increased|increase|positive|positively)\b/i.test(sentence)) return t("direction_increase");
+  if (/\b(lower|less|decreased|decrease|reduced|negative|negatively)\b/i.test(sentence)) return t("direction_decrease");
+  if (/\b(no|not|neither|unrelated|not associated|no association|no relationship)\b/i.test(sentence)) return t("direction_unclear");
+  return t("direction_general");
 }
 
 function inferEvidenceType(sentence) {

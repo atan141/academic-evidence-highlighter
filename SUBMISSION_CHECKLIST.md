@@ -4,7 +4,7 @@ Use this checklist before publishing Academic Evidence Highlighter.
 
 ## Before Uploading
 
-- Confirm the uploaded ZIP contains `extension/manifest.json`.
+- Confirm the uploaded ZIP has `manifest.json` at its root (zip the extension folder's contents, not the folder itself).
 - Confirm the version in `extension/manifest.json` is the version being uploaded.
 - Reload the unpacked extension in `chrome://extensions`.
 - Test the side panel on:
@@ -20,6 +20,11 @@ Use this checklist before publishing Academic Evidence Highlighter.
 - Confirm no old search-result preview badges appear on Scholar results.
 - Confirm **Clear all** clears fields, results, and page highlights.
 - Confirm CSV export works.
+- Confirm the side panel loads without an invalid-locale error in English, Chinese, Japanese, and Spanish (switch Chrome's language and relaunch).
+- Confirm no numbered placeholder sits directly next to another placeholder in any `_locales/*/messages.json` (adjacent placeholders break Chrome's locale loading).
+- Confirm field example prompts stay in English in all locales.
+- Confirm card tags render translated while filtering, sorting, and CSV values still use the English values.
+- Confirm an unsupported language (for example Italian) falls back to English.
 
 ## Privacy and Policy
 
@@ -37,17 +42,21 @@ Use this checklist before publishing Academic Evidence Highlighter.
 
 ## Suggested Short Description
 
-Review candidate evidence in scholarly search results, article pages, and PDFs.
+Highlight evidence sentences in research papers and PDFs from your question and concepts — private, nothing uploaded.
 
 ## Suggested Detailed Description
 
-Academic Evidence Highlighter helps researchers, students, and readers quickly find candidate evidence in academic materials.
+Too much to read? Ask a question, and let the page answer with evidence.
 
-Enter a research question or target concepts, then scan the current page or an accessible or saved PDF. Automatic scanning defaults to **Scholarly pages only**. The extension checks the page address before loading its page-reading script; unrecognized pages are not read unless the user chooses a one-time scan. Choose **Any page** to allow automatic scanning of visible text on any active page, or **Only when I click Scan** to wait for a manual scan. Any page mode or an explicit scan can process visible personal communications on the page the user chooses. Scrolling on an eligible page can trigger a scan of newly loaded text. Users can pause scanning; pausing clears current results and highlights while keeping research settings, and confirming a scan while paused resumes scanning.
+Academic Evidence Highlighter helps researchers and students review research papers and PDFs. Enter a research question and target concepts, and it highlights likely evidence sentences on the page, shows review cards in the side panel, labels references separately, and exports candidate results to CSV. Every result is candidate evidence for human verification — you decide what counts.
 
-The extension highlights likely evidence sentences, shows review cards in the side panel, labels references separately, and can export candidate results to CSV. Every result is candidate evidence for human verification. The extension is intended to speed up review, not replace careful reading or citation checking.
+You stay in control. Pause clears results and highlights while keeping your settings. Three scan modes: Scholarly (the default), All, and Manual. In Scholarly mode, only scholarly pages are read — the page-reading script is not even loaded on other pages. Unrecognized pages are not read unless you choose Scan this page once. In All mode, the extension can scan visible text on any page you choose, including personal communications displayed there. In Manual mode, nothing scans until you click Scan. Scrolling a scholarly page can scan newly loaded text as it appears.
 
-Page/PDF text and results are processed locally and are not sent to the developer. Research fields and interface preferences use Chrome Storage Sync and may sync according to the user's Chrome settings.
+The panel speaks your language. The interface is available in English, Simplified Chinese, Japanese, and Spanish, and follows your Chrome language setting; other languages show English. Your question, concepts, and the paper's own sentences are never translated — only the extension's buttons, instructions, labels, and summary templates change language. Example prompts in the fields stay in English, because matching works on English input.
+
+Everything is processed locally on your device. Page and PDF text are not sent to the developer, and there is no account or sign-up. Your research settings and interface preferences use Chrome Storage Sync and may sync according to your Chrome settings.
+
+Built for research, but in All or Manual mode the same question-driven scanning works on any long page.
 
 ## Suggested Permission Explanation
 
