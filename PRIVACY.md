@@ -1,12 +1,12 @@
-# Privacy Policy for Academic Evidence Highlighter
+# Privacy Policy for Agate: Academic Evidence Highlighter
 
 Effective date: October 25, 2026
 
-Academic Evidence Highlighter is a Chrome extension that helps users find candidate evidence in scholarly search results, article pages, and PDFs. This policy explains what information the extension uses and how it handles that information.
+Agate: Academic Evidence Highlighter is a Chrome extension that helps users find candidate evidence in scholarly search results, article pages, and PDFs. This policy explains what information the extension uses and how it handles that information.
 
 ## Summary
 
-Academic Evidence Highlighter processes page text locally in the user's browser to provide its evidence-highlighting features. The extension does not sell user data, does not use user data for advertising, and does not send paper text, research questions, browsing activity, or PDF text to the developer's servers.
+Agate: Academic Evidence Highlighter processes page text locally in the user's browser to provide its evidence-highlighting features. The extension does not sell user data, does not use user data for advertising, and does not send paper text, research questions, browsing activity, or PDF text to the developer's servers.
 
 ## Information the Extension Uses
 
@@ -60,7 +60,7 @@ Candidate evidence results are kept in the extension side panel and in memory in
 
 ## Sharing and Selling Data
 
-Academic Evidence Highlighter does not sell user data.
+Agate: Academic Evidence Highlighter does not sell user data.
 
 The extension does not send page text, PDF text, research questions, or generated results to the developer or to advertising, analytics, data-broker, or AI services. Research fields and interface preferences are stored through Chrome Storage Sync, which may sync them across the user's signed-in Chrome browsers according to Chrome's sync settings. The developer does not receive those synced values.
 

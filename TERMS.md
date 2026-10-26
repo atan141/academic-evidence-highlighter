@@ -1,12 +1,12 @@
-# Terms of Use for Academic Evidence Highlighter
+# Terms of Use for Agate: Academic Evidence Highlighter
 
 Effective date: October 23, 2026
 
-These Terms of Use describe acceptable use of Academic Evidence Highlighter.
+These Terms of Use describe acceptable use of Agate: Academic Evidence Highlighter.
 
 ## Purpose
 
-Academic Evidence Highlighter is a research-assistance tool. It helps users locate candidate evidence in scholarly search results, article pages, and PDFs. It is designed to support human review, not replace human judgment.
+Agate: Academic Evidence Highlighter is a research-assistance tool. It helps users locate candidate evidence in scholarly search results, article pages, and PDFs. It is designed to support human review, not replace human judgment.
 
 ## Candidate Evidence Only
 
@@ -39,7 +39,7 @@ The extension does not provide legal, medical, financial, scientific, or academi
 
 ## Intellectual Property
 
-Academic Evidence Highlighter does not claim ownership of papers, articles, PDFs, websites, or other materials scanned by the user. All rights in third-party content remain with their respective owners.
+Agate: Academic Evidence Highlighter does not claim ownership of papers, articles, PDFs, websites, or other materials scanned by the user. All rights in third-party content remain with their respective owners.
 
 The extension's code, name, icons, and documentation are owned by the extension developer unless otherwise stated.
 

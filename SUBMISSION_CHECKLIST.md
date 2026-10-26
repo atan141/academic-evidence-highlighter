@@ -1,6 +1,6 @@
 # Chrome Web Store Submission Checklist
 
-Use this checklist before publishing Academic Evidence Highlighter.
+Use this checklist before publishing Agate: Academic Evidence Highlighter.
 
 ## Before Uploading
 
@@ -48,7 +48,7 @@ Highlight evidence sentences in research papers and PDFs from your question and 
 
 Too much to read? Ask a question, and let the page answer with evidence.
 
-Academic Evidence Highlighter helps researchers and students review research papers and PDFs. Enter a research question and target concepts, and it highlights likely evidence sentences on the page, shows review cards in the side panel, labels references separately, and exports candidate results to CSV. Every result is candidate evidence for human verification — you decide what counts.
+Agate: Academic Evidence Highlighter helps researchers and students review research papers and PDFs. Enter a research question and target concepts, and it highlights likely evidence sentences on the page, shows review cards in the side panel, labels references separately, and exports candidate results to CSV. Every result is candidate evidence for human verification — you decide what counts.
 
 You stay in control. Pause clears results and highlights while keeping your settings. Three scan modes: Scholarly (the default), All, and Manual. In Scholarly mode, only scholarly pages are read — the page-reading script is not even loaded on other pages. Unrecognized pages are not read unless you choose Scan this page once. In All mode, the extension can scan visible text on any page you choose, including personal communications displayed there. In Manual mode, nothing scans until you click Scan. Scrolling a scholarly page can scan newly loaded text as it appears.
 
@@ -60,7 +60,7 @@ Built for research, but in All or Manual mode the same question-driven scanning 
 
 ## Suggested Permission Explanation
 
-Academic Evidence Highlighter checks the active tab address locally in scholarly-only mode and reads page content only after the address is recognized or the user explicitly chooses to scan that page. Any page mode may process visible text, including personal communications displayed on the page the user chooses; scrolling on eligible pages triggers scans of newly loaded text. Page/PDF text and results stay local. Research fields and interface preferences use Chrome Storage Sync and may sync according to the user's Chrome settings. The extension does not sell data, serve ads, or send page text to the developer.
+Agate: Academic Evidence Highlighter checks the active tab address locally in scholarly-only mode and reads page content only after the address is recognized or the user explicitly chooses to scan that page. Any page mode may process visible text, including personal communications displayed on the page the user chooses; scrolling on eligible pages triggers scans of newly loaded text. Page/PDF text and results stay local. Research fields and interface preferences use Chrome Storage Sync and may sync according to the user's Chrome settings. The extension does not sell data, serve ads, or send page text to the developer.
 
 ## Suggested Category
 

@@ -1,6 +1,6 @@
 # Data Usage Disclosure
 
-This document is written to help complete the Chrome Web Store privacy and data usage forms for Academic Evidence Highlighter.
+This document is written to help complete the Chrome Web Store privacy and data usage forms for Agate: Academic Evidence Highlighter.
 
 Current submitted public privacy policy URL:
 
@@ -8,7 +8,7 @@ Current submitted public privacy policy URL:
 
 ## Single Purpose
 
-Academic Evidence Highlighter helps users find and review candidate evidence in scholarly search results, article pages, and PDFs.
+Agate: Academic Evidence Highlighter helps users find and review candidate evidence in scholarly search results, article pages, and PDFs.
 
 ## Data the Extension Uses
 

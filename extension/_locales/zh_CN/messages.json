@@ -1,5 +1,5 @@
 {
-  "ext_name": {"message": "Academic Evidence Highlighter"},
+  "ext_name": {"message": "Agate: Academic Evidence Highlighter"},
   "ext_description": {"message": "根据你的问题和概念，高亮研究论文和 PDF 中的证据句——私密，不会发送给开发者。"},
   "command_toggle_pause": {"message": "暂停或恢复 Evidence Highlighter 扫描"},
   "panel_title": {"message": "证据查找器"},
@@ -110,7 +110,7 @@
   "empty_pdf_denied_title": {"message": "PDF 服务器阻止了访问"},
   "empty_pdf_denied_msg": {"message": "PDF 服务器拒绝了扩展的访问，因此无法在标签页中读取此文件。请下载 PDF 并改用“扫描已保存的 PDF”。"},
   "empty_blocked_title": {"message": "Chrome 不允许访问此页面"},
-  "empty_blocked_msg": {"message": "Chrome 阻止了扩展读取此网站。请打开 chrome://extensions，找到 Academic Evidence Highlighter，选择“详情 → 网站访问权限”，然后允许在此网站上访问。您也可以下载文章 PDF 并使用“扫描已保存的 PDF”。"},
+  "empty_blocked_msg": {"message": "Chrome 阻止了扩展读取此网站。请打开 chrome://extensions，找到 Agate: Academic Evidence Highlighter，选择“详情 → 网站访问权限”，然后允许在此网站上访问。您也可以下载文章 PDF 并使用“扫描已保存的 PDF”。"},
   "empty_scan_failed_title": {"message": "此页面无法扫描"},
   "empty_scan_failed_msg": {"message": "扩展无法读取此页面（$1）。如果这是文章，请尝试其全文页面，或下载 PDF 并使用“扫描已保存的 PDF”。"},
   "empty_paused_cleared_msg": {"message": "当前结果和页面高亮已清除。恢复扫描后可再次扫描符合条件的页面。"},

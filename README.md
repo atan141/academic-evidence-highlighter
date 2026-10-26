@@ -1,4 +1,4 @@
-# Academic Evidence Highlighter
+# Agate: Academic Evidence Highlighter
 
 A Chrome extension prototype for finding candidate evidence while reading research pages.
 

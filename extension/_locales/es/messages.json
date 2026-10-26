@@ -1,5 +1,5 @@
 {
-  "ext_name": {"message": "Academic Evidence Highlighter"},
+  "ext_name": {"message": "Agate: Academic Evidence Highlighter"},
   "ext_description": {"message": "Resalta frases de evidencia en artículos de investigación y PDF a partir de tu pregunta y conceptos — privado, sin enviar nada al desarrollador."},
   "command_toggle_pause": {"message": "Pausar o reanudar el escaneo de Evidence Highlighter"},
   "panel_title": {"message": "Buscador de evidencia"},
@@ -110,7 +110,7 @@
   "empty_pdf_denied_title": {"message": "El servidor PDF bloqueó el acceso"},
   "empty_pdf_denied_msg": {"message": "El servidor PDF negó el acceso a la extensión, así que no pudo leer este archivo en la pestaña. Descarga el PDF y usa Escanear PDF guardado en su lugar."},
   "empty_blocked_title": {"message": "Chrome no permitió el acceso a esta página"},
-  "empty_blocked_msg": {"message": "Chrome bloqueó la lectura de este sitio por parte de la extensión. Abre chrome://extensions, busca Academic Evidence Highlighter, elige Detalles → Acceso al sitio y permite el acceso en este sitio. También puedes descargar el PDF del artículo y usar Escanear PDF guardado."},
+  "empty_blocked_msg": {"message": "Chrome bloqueó la lectura de este sitio por parte de la extensión. Abre chrome://extensions, busca Agate: Academic Evidence Highlighter, elige Detalles → Acceso al sitio y permite el acceso en este sitio. También puedes descargar el PDF del artículo y usar Escanear PDF guardado."},
   "empty_scan_failed_title": {"message": "No se pudo escanear esta página"},
   "empty_scan_failed_msg": {"message": "La extensión no pudo leer la página ($1). Si es un artículo, prueba su página de texto completo o descarga el PDF y usa Escanear PDF guardado."},
   "empty_paused_cleared_msg": {"message": "Se borraron los resultados actuales y los resaltados de la página. Reanuda el escaneo para volver a escanear las páginas elegibles."},

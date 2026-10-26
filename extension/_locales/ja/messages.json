@@ -1,5 +1,5 @@
 {
-  "ext_name": {"message": "Academic Evidence Highlighter"},
+  "ext_name": {"message": "Agate: Academic Evidence Highlighter"},
   "ext_description": {"message": "あなたの質問と概念から、研究論文や PDF の証拠文をハイライトします——プライベートで、開発者に送信されることはありません。"},
   "command_toggle_pause": {"message": "Evidence Highlighter のスキャンを一時停止または再開"},
   "panel_title": {"message": "証拠ファインダー"},
@@ -110,7 +110,7 @@
   "empty_pdf_denied_title": {"message": "PDF サーバーがアクセスをブロックしました"},
   "empty_pdf_denied_msg": {"message": "PDF サーバーが拡張機能へのアクセスを拒否したため、このファイルをタブ内で読み取ることができませんでした。PDF をダウンロードして、代わりに「保存したPDFをスキャン」を使用してください。"},
   "empty_blocked_title": {"message": "Chrome はこのページへのアクセスを許可しませんでした"},
-  "empty_blocked_msg": {"message": "Chrome は拡張機能によるこのサイトの読み取りをブロックしました。chrome://extensions を開き、Academic Evidence Highlighter を見つけて「詳細 → サイトへのアクセス」を選択し、このサイトでのアクセスを許可してください。記事の PDF をダウンロードして「保存したPDFをスキャン」を使用することもできます。"},
+  "empty_blocked_msg": {"message": "Chrome は拡張機能によるこのサイトの読み取りをブロックしました。chrome://extensions を開き、Agate: Academic Evidence Highlighter を見つけて「詳細 → サイトへのアクセス」を選択し、このサイトでのアクセスを許可してください。記事の PDF をダウンロードして「保存したPDFをスキャン」を使用することもできます。"},
   "empty_scan_failed_title": {"message": "このページをスキャンできませんでした"},
   "empty_scan_failed_msg": {"message": "拡張機能はこのページを読み取れませんでした（$1）。記事の場合は、全文ページを試すか、PDF をダウンロードして「保存したPDFをスキャン」を使用してください。"},
   "empty_paused_cleared_msg": {"message": "現在の結果とページハイライトは消去されました。スキャンを再開すると、対象ページを再びスキャンできます。"},
