@@ -4,5 +4,7 @@
 *.zip
 !versions/0.16.3/academic-evidence-highlighter-0.16.3.zip
 !versions/0.17.11/academic-evidence-highlighter-0.17.11.zip
+!versions/0.17.12/academic-evidence-highlighter-0.17.12.zip
+!versions/0.17.13/agate-0.17.13.zip
 node_modules/
 .env

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Agate: Academic Evidence Highlighter</title>
+    <link rel="stylesheet" href="sidepanel.css">
+  </head>
+  <body>
+    <main class="panel">
+      <header class="topbar">
+        <div>
+          <h1 data-i18n="panel_title">Evidence Finder</h1>
+          <p data-i18n="panel_subtitle">Candidate evidence for quick academic review.</p>
+        </div>
+        <div class="scanControl">
+          <div id="scanState" class="scanState" role="status" data-i18n="scan_state_on">Scanning on</div>
+          <button id="pauseButton" class="pauseButton" type="button" data-i18n="pause_button_pause">Pause scanning</button>
+        </div>
+      </header>
+
+      <div id="upgradeNote" class="upgradeNote" hidden>
+        <span data-i18n="upgrade_note">Scanning now starts on scholarly pages only. You can change this below.</span>
+        <button id="dismissUpgradeNote" type="button" aria-label="Dismiss update note" data-i18n="dismiss_button" data-i18n-aria-label="dismiss_aria">Dismiss</button>
+      </div>
+
+      <section class="controls">
+        <label>
+          <span data-i18n="label_auto_scanning">Automatic scanning</span>
+          <select id="scanMode">
+            <option value="scholarly" data-i18n="scan_mode_scholarly">Scholarly pages only</option>
+            <option value="all" data-i18n="scan_mode_all">Any page</option>
+            <option value="manual" data-i18n="scan_mode_manual">Only when I click Scan</option>
+          </select>
+        </label>
+        <p class="fieldHint scanPrivacyHint" data-i18n="scan_privacy_hint">Scholarly pages only skips unrecognized pages unless you choose a one-time scan. Any page or a manual scan can read visible text on the page you choose, including email or chat messages. Scrolling on eligible pages can scan newly loaded text.</p>
+        <label>
+          <span data-i18n="label_question">Research question</span>
+          <textarea id="question" rows="3" data-i18n-placeholder="placeholder_question" placeholder="How is forest cover related to tick abundance?"></textarea>
+          <span class="fieldHint" data-i18n="hint_page_search">Page searches update these fields when the site exposes the selected query. If they don’t, paste it here and click Scan page.</span>
+        </label>
+        <label>
+          <span data-i18n="label_concept1">Concept 1</span>
+          <input id="conceptOne" data-i18n-placeholder="placeholder_concept1" placeholder="forest cover">
+        </label>
+        <label>
+          <span data-i18n="label_concept2">Concept 2</span>
+          <input id="conceptTwo" data-i18n-placeholder="placeholder_concept2" placeholder="tick abundance">
+        </label>
+        <label>
+          <span data-i18n="label_extra_terms">Extra terms</span>
+          <input id="extraTerms" data-i18n-placeholder="placeholder_extra_terms" placeholder="density, prevalence, habitat, canopy">
+        </label>
+        <div class="buttonRow">
+          <button id="scanButton" class="primary" data-i18n="button_scan_page">Scan page</button>
+          <button id="scanFileButton" data-i18n="button_scan_pdf">Scan saved PDF</button>
+          <button id="clearButton" data-i18n="button_clear">Clear all</button>
+        </div>
+        <input id="pdfFileInput" class="hiddenInput" type="file" accept="application/pdf,.pdf">
+      </section>
+
+      <section class="status" id="status" data-i18n="status_initial">Search any page or enter a research question. Scrolling can load and scan more page content when automatic scanning is enabled.</section>
+
+      <section class="sessionHint" data-i18n="session_hint">Results stay in memory for each open tab and return when you switch back. Feeds load content gradually; scroll at a pace that lets each section be scanned. Reloading, closing the tab, or navigating to another page clears that page’s memory. Export CSV if you need to keep a copy. Nothing is saved to a results database.</section>
+
+      <section class="summary">
+        <strong id="count">0</strong>
+        <span id="countCaption" data-i18n="count_candidates">candidate sentences</span>
+        <button id="exportButton" disabled data-i18n="button_export_csv">Export CSV</button>
+      </section>
+
+      <section id="emptyState" class="emptyState" aria-live="polite" hidden></section>
+
+      <dialog id="pausedScanDialog" class="pausedScanDialog" aria-labelledby="pausedScanTitle">
+        <h2 id="pausedScanTitle" data-i18n="paused_title">Scanning is paused</h2>
+        <p data-i18n="dialog_paused_body">Resume scanning and scan this page now? This will turn off Pause scanning.</p>
+        <div class="dialogActions">
+          <button id="keepPausedButton" type="button" data-i18n="dialog_keep_paused">Keep paused</button>
+          <button id="resumeAndScanButton" class="primary" type="button" data-i18n="dialog_resume_scan">Resume and scan</button>
+        </div>
+      </dialog>
+
+      <section class="resultControls">
+        <label>
+          <span data-i18n="label_sort">Sort</span>
+          <select id="sortMode">
+            <option value="order" data-i18n="sort_paper_order">Paper order</option>
+            <option value="compatibility" data-i18n="sort_compatibility">Highest compatibility</option>
+          </select>
+        </label>
+        <label>
+          <span data-i18n="label_show">Show</span>
+          <select id="confidenceFilter">
+            <option value="noReferences" data-i18n="filter_no_refs">All except references</option>
+            <option value="high" data-i18n="filter_high">High only</option>
+            <option value="medium" data-i18n="filter_medium">Medium and high</option>
+            <option value="low" data-i18n="filter_low">Low only</option>
+            <option value="reference" data-i18n="filter_reference">References only</option>
+            <option value="allWithReferences" data-i18n="filter_all_refs">All including references</option>
+          </select>
+        </label>
+      </section>
+
+      <section id="results" class="results"></section>
+    </main>
+    <script src="sidepanel.js"></script>
+  </body>
+</html>

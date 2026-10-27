@@ -1,6 +1,6 @@
 # Academic Evidence Highlighter 0.17.11
 
-Latest version snapshot. The previous finalized 0.16.3 snapshot remains available.
+Previous finalized version snapshot, superseded by 0.17.12. The 0.16.3 snapshot remains available.
 
 - `extension/`: source files for loading the unpacked extension in Chrome.
 - `academic-evidence-highlighter-0.17.11.zip`: packaged extension ZIP for the Chrome Web Store release.
